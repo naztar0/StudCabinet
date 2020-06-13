@@ -204,7 +204,7 @@ async def registration(message: types.Message, state: FSMContext):
         await message.answer("Неверный ввод")
         return
     page = "1"
-    response_1 = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}'.format(email=mail, passwd=passwd, page=page))
+    response_1 = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer_1 = json.loads(response_1.text)
     if not answer_1:
         await message.answer("Неправильный email или пароль")
@@ -225,7 +225,7 @@ async def page_1(message):
     mail = auth[0]
     passwd = auth[1]
     page = "1"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}'.format(email=mail, passwd=passwd, page=page))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer = json.loads(response.text)[0]
     main_page = "👤 *ФИО:* {fam} {imya} {otch}\n\n" \
                 "🔢 *Курс:* {kurs}\n\n" \
@@ -248,7 +248,7 @@ async def page_2(message, sem):
     mail = auth[0]
     passwd = auth[1]
     page = "2"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}&semestr={sem}'.format(email=mail, passwd=passwd, page=page, sem=sem))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
     if not answer:
         await message.answer("Не найдено")
@@ -286,7 +286,7 @@ async def page_5(message, sem):
     passwd = auth[1]
     student_id = auth[2]
     page = "5"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}&semestr={sem}'.format(email=mail, passwd=passwd, page=page, sem=sem))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
     all_in_list = len(answer)
     for a in answer:
@@ -318,7 +318,7 @@ async def page_4(message, sem):
     mail = auth[0]
     passwd = auth[1]
     page = "4"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}&semestr={sem}'.format(email=mail, passwd=passwd, page=page, sem=sem))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
     if not answer:
         await message.answer("Не найдено")
@@ -345,7 +345,7 @@ async def page_3(message):
     mail = auth[0]
     passwd = auth[1]
     page = "3"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}'.format(email=mail, passwd=passwd, page=page))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer = json.loads(response.text)
     if not answer:
         await message.answer("Не найдено")
@@ -414,8 +414,7 @@ async def show_all_list(message, sem):
     passwd = auth[1]
     student_id = auth[2]
     page = "5"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}&semestr={sem}'
-                             .format(email=mail, passwd=passwd, page=page, sem=sem))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
     text = ""
     for a in answer:
@@ -436,7 +435,7 @@ async def send_histogram_of_page_2(message, sem):
     mail = auth[0]
     passwd = auth[1]
     page = "2"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}&semestr={sem}'.format(email=mail, passwd=passwd, page=page, sem=sem))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
     subject = []
     score = []
@@ -447,7 +446,7 @@ async def send_histogram_of_page_2(message, sem):
         score.append(int("{oc_bol}".format(**n)))
         subject.append("{subject}".format(**n))
         count += 1
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page=1'.format(email=mail, passwd=passwd))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=1')
     answer = json.loads(response.text)[0]
     histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer))
     with open("media/img.jpg", "rb") as f:
@@ -461,7 +460,7 @@ async def send_histogram_of_page_4(message, sem):
     mail = auth[0]
     passwd = auth[1]
     page = "4"
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/kabinet?email={email}&pass={passwd}&page={page}&semestr={sem}'.format(email=mail, passwd=passwd, page=page, sem=sem))
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
     subject = []
     score = []
