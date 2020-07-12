@@ -55,7 +55,7 @@ async def reg_key(message):
     but_2 = types.KeyboardButton(button[6])
     key.add(but_1)
     key.add(but_2)
-    await message.answer("Привет, чтобы продолжить нажми на одну из кнопок", reply_markup=key)
+    await message.answer("Чтобы продолжить нажмите на одну из кнопок", reply_markup=key)
 
 
 @dp.message_handler(commands=['keyboard'])
@@ -65,7 +65,7 @@ async def handle_text(message: types.Message):
 
 @dp.message_handler(commands=['feedback'])
 async def handle_text(message: types.Message):
-    await message.reply("Напиши сообщение с пожеланиями или вопросами касательно бота\n\nОтмена - [/exit]")
+    await message.reply("Напишите сообщение с пожеланиями или вопросами касательно бота\n\nОтмена - [/exit]")
     await Feedback.text.set()
 
 
@@ -85,7 +85,7 @@ async def feedback(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=['send'])
 async def handle_text(message: types.Message):
     if message.chat.id == c.admin:
-        await message.answer("Введи сообщение для отправки пользователям\n\nОтмена - [/exit]")
+        await message.answer("Введите сообщение для отправки пользователям\n\nОтмена - [/exit]")
         await SendMessageToUsers.text.set()
 
 
@@ -102,24 +102,29 @@ async def handle_text(message: types.Message, state: FSMContext):
     users = cursor.fetchall()
     conn.close()
     i = 0
+    j = 0
     for user in users:
         try:
             await bot.send_message(user[0], message.text)
             i += 1
-        except utils.exceptions.BotBlocked: pass
-    await message.answer(f"Сообщение отправлено {i} пользователям")
+        except utils.exceptions.BotBlocked: j += 1
+    await message.answer(f"Отправлено: {i}\nНе отправлено: {j}")
 
 
 @dp.message_handler(content_types=['text'])
 async def handle_text(message: types.Message):
     if message.text == "👥 Войти в кабинет":
-        await message.answer("Введи свой Email и пароль от личного кабинета через пробел\nНапример:\nemail@example.com d1v8s3")
+        auth = await authentication(message, first=True)
+        if auth:
+            return
+        await message.answer("Введите свой Email и пароль от личного кабинета через пробел\nНапример:\nemail@example.com d1v8s3")
         await Form.authorization.set()
     elif message.text == button[6]:
         await message.answer(c.helper)
     elif message.text == button[0]:
         data = await page_1(message)
-        if not data: return
+        if not data:
+            return
         await message.answer(str(data), parse_mode="Markdown")
     elif message.text == button[1]:
         key = types.InlineKeyboardMarkup()
@@ -137,7 +142,7 @@ async def handle_text(message: types.Message):
         a12 = types.InlineKeyboardButton(text="12", callback_data="212")
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Выбери семестр", reply_markup=key)
+        await message.answer("Выберите семестр", reply_markup=key)
     elif message.text == button[2]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="31")
@@ -154,7 +159,7 @@ async def handle_text(message: types.Message):
         a12 = types.InlineKeyboardButton(text="12", callback_data="312")
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Выбери семестр", reply_markup=key)
+        await message.answer("Выберите семестр", reply_markup=key)
     elif message.text == button[4]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="41")
@@ -171,7 +176,7 @@ async def handle_text(message: types.Message):
         a12 = types.InlineKeyboardButton(text="12", callback_data="412")
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Выбери семестр", reply_markup=key)
+        await message.answer("Выберите семестр", reply_markup=key)
     elif message.text == button[3]:
         await page_3(message)
     elif message.text == button[5]:
@@ -180,20 +185,24 @@ async def handle_text(message: types.Message):
         await send_pdf(message)
 
 
-async def authentication(message):
+async def authentication(message, first=False):
     conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
     cursor = conn.cursor(buffered=True)
     findQuery = "SELECT mail, pass, stud_id FROM users WHERE user_id=(%s)"
     cursor.execute(findQuery, [message.chat.id])
     auth = cursor.fetchone()
     conn.close()
-    if not auth:
-        await message.answer("Ошибка аутентификации, повторите попытку входа")
-        await reg_key(message)
+    if first:
+        if auth:
+            await message.answer("Похоже, Вы уже входили в свой кабинет", reply_markup=keyboard())
+    else:
+        if not auth:
+            await message.answer("Ошибка аутентификации, повторите попытку входа")
+            await reg_key(message)
     return auth
 
 
-@dp.message_handler(state=Form.authorization)
+@dp.message_handler(content_types=['text'], state=Form.authorization)
 async def registration(message: types.Message, state: FSMContext):
     s = message.text
     await state.finish()
@@ -301,11 +310,15 @@ async def page_5(message, sem):
         return
     percent = float("%.2f" % (num * 100 / all_in_list))
     percent_str = "📈 *Процент в рейтинге:* {} %\n\n".format(percent)
-    stip = "💸 *Вероятность получения стипендии:* нулевая"
-    if percent < 45:
-        stip = "💸 *Вероятность получения стипендии:* высокая"
-        if percent < 40:
-            stip = "💸 *Вероятность получения стипендии:* 100 %"
+    stip = "💸 *Вероятность получения стипендии:* "
+    if percent < 50:
+        if percent < 45:
+            if percent < 40:
+                stip += "100 %"
+            else: stip += "высокая"
+        else: stip += "низкая"
+    else: stip += "нулевая"
+
     ps = "\n\n_PS: если не выставлены оценки по всем дисциплинам, то рейтинг не является достоверным_"
     key_extend = types.InlineKeyboardMarkup()
     key_extend.add(types.InlineKeyboardButton("Показать весь список", callback_data="all_list" + sem))
@@ -368,7 +381,7 @@ async def page_sport(message):
     key = types.InlineKeyboardMarkup()
     for a in answer:
         key.add(types.InlineKeyboardButton("{sport}".format(**a), callback_data="s{sportid}".format(**a)))
-    await message.answer("Выбери вид спорта", reply_markup=key)
+    await message.answer("Выберите вид спорта", reply_markup=key)
 
 
 def days(s_id):
