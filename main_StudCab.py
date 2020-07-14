@@ -2,6 +2,7 @@
 import requests
 import json
 import constants as c
+import histogram
 import mysql.connector
 
 from aiogram import Bot, Dispatcher, executor, types, utils
@@ -9,7 +10,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-import histogram
 
 bot = Bot(c.token)
 storage = MemoryStorage()
@@ -25,7 +25,6 @@ class Feedback(StatesGroup): text = State()
 class SendMessageToUsers(StatesGroup): text = State()
 
 
-strings_file = "strings.json"
 sign_in_butt = "👥 Увійти в кабінет"
 buttons_ru = ["ℹ Общая иформация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь", "🇷🇺 Язык"]
 buttons_ua = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "🗓 Навчальний план", "📆 Розклад спорт. каф.", "❓Допомога", "🇺🇦 Мова"]
@@ -84,7 +83,7 @@ async def handle_text(message: types.Message):
     auth = await authentication(message)
     if auth: lang = auth[3]
     else: lang = 'ua'
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     await message.reply(strings[lang]['feedback_start'])
     await Feedback.text.set()
@@ -97,7 +96,7 @@ async def feedback(message: types.Message, state: FSMContext):
     auth = await authentication(message)
     if auth: lang = auth[3]
     else: lang = 'ua'
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
 
     m = str(message.text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
@@ -224,7 +223,7 @@ async def authentication(message, first=False):
     if first:
         if auth:
             lang = auth[3]
-            with open(strings_file, encoding='utf-8') as f:
+            with open(c.strings_file, encoding='utf-8') as f:
                 strings = json.load(f)
             keyboard = keyboard_ua()
             if lang == 'ru': keyboard = keyboard_ru()
@@ -272,7 +271,7 @@ async def page_1(message):
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer = json.loads(response.text)[0]
 
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     main_page = strings[lang]['page_1'].format(**answer).replace("`", "'")
     await message.answer(main_page, parse_mode="Markdown")
@@ -288,7 +287,7 @@ async def page_2(message, sem):
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
 
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
         await message.answer(strings[lang]['not_found'])
@@ -325,7 +324,7 @@ async def page_5(message, sem):
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
 
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     all_in_list = len(answer)
     for a in answer:
@@ -363,7 +362,7 @@ async def page_4(message, sem):
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
 
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
         await message.answer(strings[lang]['not_found'])
@@ -391,7 +390,7 @@ async def page_3(message):
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer = json.loads(response.text)
 
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
         await message.answer(strings[lang]['not_found'])
@@ -409,7 +408,7 @@ async def page_sport(message):
     response = requests.post('https://schedule.kpi.kharkov.ua/json/sport')
     answer = json.loads(response.text)
 
-    with open(strings_file, encoding='utf-8') as f:
+    with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
         await message.answer(strings[lang]['not_found'])
