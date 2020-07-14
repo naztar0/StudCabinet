@@ -25,22 +25,43 @@ class Feedback(StatesGroup): text = State()
 class SendMessageToUsers(StatesGroup): text = State()
 
 
-button = ["ℹ Общая иформация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь"]
+strings_file = "strings.json"
+sign_in_butt = "👥 Увійти в кабінет"
+buttons_ru = ["ℹ Общая иформация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь", "🇷🇺 Язык"]
+buttons_ua = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "🗓 Навчальний план", "📆 Розклад спорт. каф.", "❓Допомога", "🇺🇦 Мова"]
 
 
-def keyboard():
+def keyboard_ru():
     key = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    but_1 = types.KeyboardButton(button[0])
-    but_2 = types.KeyboardButton(button[1])
-    but_3 = types.KeyboardButton(button[2])
-    but_4 = types.KeyboardButton(button[3])
-    but_5 = types.KeyboardButton(button[4])
-    but_6 = types.KeyboardButton(button[5])
-    but_7 = types.KeyboardButton(button[6])
+    but_1 = types.KeyboardButton(buttons_ru[0])
+    but_2 = types.KeyboardButton(buttons_ru[1])
+    but_3 = types.KeyboardButton(buttons_ru[2])
+    but_4 = types.KeyboardButton(buttons_ru[3])
+    but_5 = types.KeyboardButton(buttons_ru[4])
+    but_6 = types.KeyboardButton(buttons_ru[5])
+    but_7 = types.KeyboardButton(buttons_ru[6])
+    but_8 = types.KeyboardButton(buttons_ru[7])
     key.add(but_1, but_2)
     key.add(but_3, but_4)
     key.add(but_5, but_6)
-    key.add(but_7)
+    key.add(but_7, but_8)
+    return key
+
+
+def keyboard_ua():
+    key = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    but_1 = types.KeyboardButton(buttons_ua[0])
+    but_2 = types.KeyboardButton(buttons_ua[1])
+    but_3 = types.KeyboardButton(buttons_ua[2])
+    but_4 = types.KeyboardButton(buttons_ua[3])
+    but_5 = types.KeyboardButton(buttons_ua[4])
+    but_6 = types.KeyboardButton(buttons_ua[5])
+    but_7 = types.KeyboardButton(buttons_ua[6])
+    but_8 = types.KeyboardButton(buttons_ua[7])
+    key.add(but_1, but_2)
+    key.add(but_3, but_4)
+    key.add(but_5, but_6)
+    key.add(but_7, but_8)
     return key
 
 
@@ -51,35 +72,42 @@ async def handle_text(message: types.Message):
 
 async def reg_key(message):
     key = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    but_1 = types.KeyboardButton("👥 Войти в кабинет")
-    but_2 = types.KeyboardButton(button[6])
+    but_1 = types.KeyboardButton(sign_in_butt)
+    but_2 = types.KeyboardButton(buttons_ua[6])
     key.add(but_1)
     key.add(but_2)
-    await message.answer("Чтобы продолжить нажмите на одну из кнопок", reply_markup=key)
-
-
-@dp.message_handler(commands=['keyboard'])
-async def handle_text(message: types.Message):
-    await message.answer("Клавиатура включена", reply_markup=keyboard())
+    await message.answer("Щоб продовжити натисніть на одну з кнопок", reply_markup=key)
 
 
 @dp.message_handler(commands=['feedback'])
 async def handle_text(message: types.Message):
-    await message.reply("Напишите сообщение с пожеланиями или вопросами касательно бота\n\nОтмена - [/exit]")
+    auth = await authentication(message)
+    if auth: lang = auth[3]
+    else: lang = 'ua'
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
+    await message.reply(strings[lang]['feedback_start'])
     await Feedback.text.set()
 
 
 @dp.message_handler(state=Feedback.text)
 async def feedback(message: types.Message, state: FSMContext):
     await state.finish()
+
+    auth = await authentication(message)
+    if auth: lang = auth[3]
+    else: lang = 'ua'
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
+
     m = str(message.text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
-    if m in {"/exit", "👥 Войти в кабинет", button[0], button[1],
-             button[2], button[3], button[4], button[5], button[6]}:
-        await message.reply("Отменено")
+    if m in {"/exit", sign_in_butt, buttons_ru[0], buttons_ru[1],
+             buttons_ru[2], buttons_ru[3], buttons_ru[4], buttons_ru[5], buttons_ru[6]}:
+        await message.reply(strings[lang]['cancel'])
         return
     text = f"*Feedback!\n\nUser:* [{message.from_user.full_name}](tg://user?id={message.from_user.id})\n\n{m}"
     await bot.send_message(c.admin, text, parse_mode="Markdown")
-    await message.answer("Ваше сообщение отправлено")
+    await message.answer(strings[lang]['feedback_finish'])
 
 
 @dp.message_handler(commands=['send'])
@@ -113,20 +141,17 @@ async def handle_text(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'])
 async def handle_text(message: types.Message):
-    if message.text == "👥 Войти в кабинет":
+    if message.text == sign_in_butt:
         auth = await authentication(message, first=True)
         if auth:
             return
-        await message.answer("Введите свой Email и пароль от личного кабинета через пробел\nНапример:\nemail@example.com d1v8s3")
+        await message.answer("Введіть свій Email і пароль від особистого кабінету через пробіл\nНаприклад:\nemail@example.com d1v8s3")
         await Form.authorization.set()
-    elif message.text == button[6]:
-        await message.answer(c.helper)
-    elif message.text == button[0]:
-        data = await page_1(message)
-        if not data:
-            return
-        await message.answer(str(data), parse_mode="Markdown")
-    elif message.text == button[1]:
+    elif message.text == buttons_ua[6] or message.text == buttons_ru[6]:
+        await message.answer(c.helper_ua, parse_mode="Markdown")
+    elif message.text == buttons_ua[0] or message.text == buttons_ru[0]:
+        await page_1(message)
+    elif message.text == buttons_ua[1] or message.text == buttons_ru[1]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="21")
         a2 = types.InlineKeyboardButton(text="2", callback_data="22")
@@ -142,8 +167,8 @@ async def handle_text(message: types.Message):
         a12 = types.InlineKeyboardButton(text="12", callback_data="212")
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Выберите семестр", reply_markup=key)
-    elif message.text == button[2]:
+        await message.answer("Семестр", reply_markup=key)
+    elif message.text == buttons_ua[2] or message.text == buttons_ru[2]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="31")
         a2 = types.InlineKeyboardButton(text="2", callback_data="32")
@@ -159,8 +184,8 @@ async def handle_text(message: types.Message):
         a12 = types.InlineKeyboardButton(text="12", callback_data="312")
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Выберите семестр", reply_markup=key)
-    elif message.text == button[4]:
+        await message.answer("Семестр", reply_markup=key)
+    elif message.text == buttons_ua[4] or message.text == buttons_ru[4]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="41")
         a2 = types.InlineKeyboardButton(text="2", callback_data="42")
@@ -176,28 +201,37 @@ async def handle_text(message: types.Message):
         a12 = types.InlineKeyboardButton(text="12", callback_data="412")
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Выберите семестр", reply_markup=key)
-    elif message.text == button[3]:
+        await message.answer("Семестр", reply_markup=key)
+    elif message.text == buttons_ua[3] or message.text == buttons_ru[3]:
         await page_3(message)
-    elif message.text == button[5]:
+    elif message.text == buttons_ua[5] or message.text == buttons_ru[5]:
         await page_sport(message)
     elif message.text == "/pdf":
         await send_pdf(message)
+    elif message.text == buttons_ua[7]:
+        await change_lang(message, 'ru')
+    elif message.text == buttons_ru[7]:
+        await change_lang(message, 'ua')
 
 
 async def authentication(message, first=False):
     conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
     cursor = conn.cursor(buffered=True)
-    findQuery = "SELECT mail, pass, stud_id FROM users WHERE user_id=(%s)"
+    findQuery = "SELECT mail, pass, stud_id, lang FROM users WHERE user_id=(%s)"
     cursor.execute(findQuery, [message.chat.id])
     auth = cursor.fetchone()
     conn.close()
     if first:
         if auth:
-            await message.answer("Похоже, Вы уже входили в свой кабинет", reply_markup=keyboard())
+            lang = auth[3]
+            with open(strings_file, encoding='utf-8') as f:
+                strings = json.load(f)
+            keyboard = keyboard_ua()
+            if lang == 'ru': keyboard = keyboard_ru()
+            await message.answer(strings[lang]['auth_err_1'], reply_markup=keyboard)
     else:
         if not auth:
-            await message.answer("Ошибка аутентификации, повторите попытку входа")
+            await message.answer("Помилка аутентифікації, повторіть спробу входу")
             await reg_key(message)
     return auth
 
@@ -210,13 +244,13 @@ async def registration(message: types.Message, state: FSMContext):
         mail = s.split(" ")[0]
         passwd = s.split(" ")[1]
     except IndexError:
-        await message.answer("Неверный ввод")
+        await message.answer("Невірний формат")
         return
     page = "1"
     response_1 = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer_1 = json.loads(response_1.text)
     if not answer_1:
-        await message.answer("Неправильный email или пароль")
+        await message.answer("Неправильний email або пароль")
         return
     student_id = "{st_cod}".format(**answer_1[0])
     conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
@@ -225,163 +259,165 @@ async def registration(message: types.Message, state: FSMContext):
     cursor.executemany(inputQuery, [(message.chat.id, student_id, mail, passwd)])
     conn.commit()
     conn.close()
-    await message.answer("Вход успешно выполнен!", reply_markup=keyboard())
+    await message.answer("Вхід успішно виконаний!", reply_markup=keyboard_ua())
 
 
 async def page_1(message):
     auth = await authentication(message)
-    if not auth: return False
+    if not auth: return
     mail = auth[0]
     passwd = auth[1]
+    lang = auth[3]
     page = "1"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer = json.loads(response.text)[0]
-    main_page = "👤 *ФИО:* {fam} {imya} {otch}\n\n" \
-                "🔢 *Курс:* {kurs}\n\n" \
-                "👥 *Група:* {grupa}\n\n" \
-                "🏢 *Факультет:* {fakultet}\n\n" \
-                "👨‍🏫 *Кафедра:* {kafedra}\n\n" \
-                "🔴 *Специализация:* {specialization}\n\n" \
-                "🔵 *Специальность:* {speciality}\n\n" \
-                "🟢 *Образовательная программа:* {osvitprog}\n\n" \
-                "👨‍🎓 *Уровень обучения:* {train_level}\n\n" \
-                "🛄 *Форма обучения:* {train_form}\n\n" \
-                "💵 *Оплата:* {oplata}\n\n" \
-                "📄 *Семестровый план:* \\[/pdf]".format(**answer).replace("`", "'")
-    return main_page
+
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
+    main_page = strings[lang]['page_1'].format(**answer).replace("`", "'")
+    await message.answer(main_page, parse_mode="Markdown")
 
 
 async def page_2(message, sem):
     auth = await authentication(message)
-    if not auth: return False
+    if not auth: return
     mail = auth[0]
     passwd = auth[1]
+    lang = auth[3]
     page = "2"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
+
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
     if not answer:
-        await message.answer("Не найдено")
+        await message.answer(strings[lang]['not_found'])
         return
     with_mark = len(answer)
     subjects = ""
     for a in answer:
-        ez = "Экзамен"
-        if "{control}".format(**a) == "З": ez = "Зачёт"
-        hvost = "{if_hvost}".format(**a)
+        ez = strings[lang]['page_2_exam']
+        if a['control'] == "З": ez = strings[lang]['page_2_zach']
+        hvost = a['if_hvost']
         if not hvost: hvost = "—"
         ball = "{oc_short}{oc_ects} {oc_bol}".format(**a)
         if ball == " ":
             ball = "—"
             with_mark -= 1
 
-        subjects = subjects + "📚 *Дисциплина:* {subject}\n\n" \
-                              f"✅ *Оценка:* {ball}\n\n" \
-                              f"📝 *Е/З:* {ez}\n\n" \
-                              "📊 *Кредит:* {credit}\n\n" \
-                              f"❗ *Хвост:* {hvost}\n➖➖➖➖➖➖➖➖➖➖➖➖\n\n"\
-                              .format(**a).replace("`", "'")
+        subjects = strings[lang]['page_2'].format(subjects, a['subject'], ball, ez, a['credit'], hvost).replace("`", "'")
 
     key_histogram = None
     if with_mark > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton("Гистограмма", callback_data="histogram2" + sem))
+        key_histogram.add(types.InlineKeyboardButton(strings[lang]['histogram'], callback_data="histogram2" + sem))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
 
 async def page_5(message, sem):
     auth = await authentication(message)
-    if not auth: return False
+    if not auth: return
     mail = auth[0]
     passwd = auth[1]
     student_id = auth[2]
+    lang = auth[3]
     page = "5"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
+
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
     all_in_list = len(answer)
     for a in answer:
-        if int("{studid}".format(**a)) == student_id:
-            rang1 = "📊 *Рейтинговый номер:* {n} из " \
-                    f"{all_in_list}\n\n" \
-                    "✅ *Рейтинговый балл:* {sbal100} | {sbal5}\n\n".format(**a)
-            num = int("{n}".format(**a))
+        if int(a['studid']) == student_id:
+            rang1 = strings[lang]['page_5'].format(a['n'], all_in_list, a['sbal100'], a['sbal5'])
+            num = int(a['n'])
             break
     else:
-        await message.answer("Не найдено")
+        await message.answer(strings[lang]['not_found'])
         return
     percent = float("%.2f" % (num * 100 / all_in_list))
-    percent_str = "📈 *Процент в рейтинге:* {} %\n\n".format(percent)
-    stip = "💸 *Вероятность получения стипендии:* "
+    percent_str = strings[lang]['page_5_rate'].format(percent)
+    stip = strings[lang]['page_5_stp']
     if percent < 50:
         if percent < 45:
             if percent < 40:
                 stip += "100 %"
-            else: stip += "высокая"
-        else: stip += "низкая"
-    else: stip += "нулевая"
+            else: stip += strings[lang]['page_5_probability']['high']
+        else: stip += strings[lang]['page_5_probability']['low']
+    else: stip += strings[lang]['page_5_probability']['zero']
 
-    ps = "\n\n_PS: если не выставлены оценки по всем дисциплинам, то рейтинг не является достоверным_"
+    ps = strings[lang]['page_5_ps']
     key_extend = types.InlineKeyboardMarkup()
-    key_extend.add(types.InlineKeyboardButton("Показать весь список", callback_data="all_list" + sem))
+    key_extend.add(types.InlineKeyboardButton(strings[lang]['page_5_all_list'], callback_data="all_list" + sem))
     await message.answer(rang1 + percent_str + stip + ps, parse_mode="Markdown", reply_markup=key_extend)
 
 
 async def page_4(message, sem):
     auth = await authentication(message)
-    if not auth: return False
+    if not auth: return
     mail = auth[0]
     passwd = auth[1]
+    lang = auth[3]
     page = "4"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
+
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
     if not answer:
-        await message.answer("Не найдено")
+        await message.answer(strings[lang]['not_found'])
         return
     i = 0
     subjects = "*Курс {kurs}, семестр {semestr}:*\n\n".format(**answer[0])
     for a in answer:
-        subjects = subjects + "`" + str(i + 1) + ".` " + "*Дисциплина:* {subject}\n" \
-                              "⏱ *Аудиторных часов:* {audit}\n" \
-                              "📊 *Кредит:* {credit}\n➖➖➖➖➖➖➖➖➖➖➖➖\n" \
-                              .format(**a).replace("`", "'")
+        subjects = strings[lang]['page_4'].format(subjects, i + 1, a['subject'], a['audit'], a['credit']).replace("`", "'")
         i += 1
 
     key_histogram = None
     if len(answer) > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton("Гистограмма", callback_data="histogram4" + sem))
+        key_histogram.add(types.InlineKeyboardButton(strings[lang]['histogram'], callback_data="histogram4" + sem))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
 
 async def page_3(message):
     auth = await authentication(message)
-    if not auth: return False
+    if not auth: return
     mail = auth[0]
     passwd = auth[1]
+    lang = auth[3]
     page = "3"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
     answer = json.loads(response.text)
+
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
     if not answer:
-        await message.answer("Не найдено")
+        await message.answer(strings[lang]['not_found'])
         return
     subjects = ""
     for a in answer:
-        subjects = subjects + "📚 *Дисциплина:* {subject}\n\n" \
-                              "👨‍🏫 *Препод:* {prepod}\n\n" \
-                              "📅 *Дата:* {data}\n➖➖➖➖➖➖➖➖➖➖➖➖\n\n" \
-                              .format(**a).replace("`", "'")
+        subjects = strings[lang]['page_3'].format(subjects, a['subject'], a['prepod'], a['data']).replace("`", "'")
     await message.answer(subjects, parse_mode="Markdown")
 
 
 async def page_sport(message):
+    auth = await authentication(message)
+    if not auth: return
+    lang = auth[3]
     response = requests.post('https://schedule.kpi.kharkov.ua/json/sport')
     answer = json.loads(response.text)
+
+    with open(strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
     if not answer:
-        await message.answer("Не найдено")
+        await message.answer(strings[lang]['not_found'])
         return
     key = types.InlineKeyboardMarkup()
     for a in answer:
         key.add(types.InlineKeyboardButton("{sport}".format(**a), callback_data="s{sportid}".format(**a)))
-    await message.answer("Выберите вид спорта", reply_markup=key)
+    await message.answer(strings[lang]['page_sport'], reply_markup=key)
 
 
 def days(s_id):
@@ -420,6 +456,22 @@ async def send_pdf(message):
     await bot.send_document(message.chat.id, url)
 
 
+async def change_lang(message, lang):
+    conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
+    cursor = conn.cursor(buffered=True)
+    changeQuery = f"UPDATE users SET lang=(%s) WHERE user_id=(%s)"
+    cursor.executemany(changeQuery, [(lang, message.chat.id)])
+    conn.commit()
+    conn.close()
+    if lang == 'ua':
+        text = "Обрана українська мова"
+        keyboard = keyboard_ua()
+    else:
+        text = "Выбран русский язык"
+        keyboard = keyboard_ru()
+    await message.answer(text, reply_markup=keyboard)
+
+
 async def show_all_list(message, sem):
     auth = await authentication(message)
     if not auth: return False
@@ -431,10 +483,10 @@ async def show_all_list(message, sem):
     answer = json.loads(response.text)
     text = ""
     for a in answer:
-        n = "{n}".format(**a)
-        fio = "{fio}".format(**a)
-        sbal100 = "%.1f" % float("{sbal100}".format(**a))
-        if int("{studid}".format(**a)) == student_id:
+        n = a['n']
+        fio = a['fio']
+        sbal100 = "%.1f" % float(a['sbal100'])
+        if int(a['studid']) == student_id:
             text += f"⭐ *{fio} ➖ {sbal100}*\n"
         else:
             text += f"*{n}.* {fio} ➖ {sbal100}\n"
@@ -456,8 +508,8 @@ async def send_histogram_of_page_2(message, sem):
     for n in answer:
         if not "{oc_bol}".format(**n).isdigit():
             continue
-        score.append(int("{oc_bol}".format(**n)))
-        subject.append("{subject}".format(**n))
+        score.append(int(n['{oc_bol}']))
+        subject.append(n['{subject}'])
         count += 1
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=1')
     answer = json.loads(response.text)[0]
@@ -479,8 +531,8 @@ async def send_histogram_of_page_4(message, sem):
     score = []
     count = 0
     for n in answer:
-        score.append(int(float("{credit}".format(**n))))
-        subject.append("{subject}".format(**n))
+        score.append(int(float(n['credit'])))
+        subject.append(n['subject'])
         count += 1
     histogram.histogram(count, score, subject, f"Семестр {sem}")
     with open("media/img.jpg", "rb") as f:
@@ -515,13 +567,12 @@ async def callback_inline(callback_query: types.CallbackQuery):
         await bot.send_message(callback_query.from_user.id, get_schedule(s_id, 1), reply_markup=days(s_id))
 
     elif data[:3] == "day":
-        day = int(data[1])
+        day = int(data[3])
         s_id = data[4:]
         try:
             await bot.edit_message_text(get_schedule(s_id, day), callback_query.from_user.id,
                                         callback_query.message.message_id, callback_query.from_user.id, reply_markup=days(s_id))
-        except utils.exceptions.MessageNotModified:
-            await callback_query.answer("Выбран тот же день!")
+        except utils.exceptions.MessageNotModified: pass
 
     elif data[:8] == "all_list":
         await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
