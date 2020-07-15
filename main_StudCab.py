@@ -89,7 +89,7 @@ async def handle_text(message: types.Message):
     await Feedback.text.set()
 
 
-@dp.message_handler(state=Feedback.text)
+@dp.message_handler(content_types=['text'], state=Feedback.text)
 async def feedback(message: types.Message, state: FSMContext):
     await state.finish()
 
@@ -246,12 +246,12 @@ async def registration(message: types.Message, state: FSMContext):
         await message.answer("Невірний формат")
         return
     page = "1"
-    response_1 = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
-    answer_1 = json.loads(response_1.text)
-    if not answer_1:
+    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    answer = json.loads(response.text)
+    if not answer:
         await message.answer("Неправильний email або пароль")
         return
-    student_id = "{st_cod}".format(**answer_1[0])
+    student_id = answer[0]['st_cod']
     conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
     cursor = conn.cursor(buffered=True)
     inputQuery = "INSERT INTO users (user_id, stud_id, mail, pass) VALUES (%s, %s, %s, %s)"
@@ -415,7 +415,7 @@ async def page_sport(message):
         return
     key = types.InlineKeyboardMarkup()
     for a in answer:
-        key.add(types.InlineKeyboardButton("{sport}".format(**a), callback_data="s{sportid}".format(**a)))
+        key.add(types.InlineKeyboardButton(a['sport'], callback_data="s{sportid}".format(**a)))
     await message.answer(strings[lang]['page_sport'], reply_markup=key)
 
 
@@ -441,7 +441,7 @@ def get_schedule(s_id, day):
     answer = json.loads(response.text)
     text = f"{day}:\n\n"
     for a in answer:
-        if "{day}".format(**a) == day:
+        if a['day'] == day:
             text += "{time} — {prepod}\n".format(**a)
     return text
 
@@ -505,10 +505,10 @@ async def send_histogram_of_page_2(message, sem):
     score = []
     count = 0
     for n in answer:
-        if not "{oc_bol}".format(**n).isdigit():
+        if not n['oc_bol'].isdigit():
             continue
-        score.append(int(n['{oc_bol}']))
-        subject.append(n['{subject}'])
+        score.append(int(n['oc_bol']))
+        subject.append(n['subject'])
         count += 1
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=1')
     answer = json.loads(response.text)[0]
