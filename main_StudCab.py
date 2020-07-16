@@ -80,9 +80,8 @@ async def reg_key(message):
 
 @dp.message_handler(commands=['feedback'])
 async def handle_text(message: types.Message):
-    auth = await authentication(message)
-    if auth: lang = auth[3]
-    else: lang = 'ua'
+    auth = await authentication(message, skip=True)
+    lang = auth[3] if auth else 'ua'
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     await message.reply(strings[lang]['feedback_start'])
@@ -93,9 +92,8 @@ async def handle_text(message: types.Message):
 async def feedback(message: types.Message, state: FSMContext):
     await state.finish()
 
-    auth = await authentication(message)
-    if auth: lang = auth[3]
-    else: lang = 'ua'
+    auth = await authentication(message, skip=True)
+    lang = auth[3] if auth else 'ua'
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
 
@@ -104,7 +102,8 @@ async def feedback(message: types.Message, state: FSMContext):
         if m in exception:
             await message.reply(strings[lang]['cancel'])
             return
-    text = f"*Feedback!\n\nUser:* [{message.from_user.full_name}](tg://user?id={message.from_user.id})\n\n{m}"
+    text = f"*Feedback!\n\nUser:* [{message.from_user.full_name}](tg://user?id={message.from_user.id})\n" \
+           f"*UserName:* @{message.from_user.username}\n*ID:* {message.from_user.id}\n\n{m}"
     await bot.send_message(c.admin, text, parse_mode="Markdown")
     await message.answer(strings[lang]['feedback_finish'])
 
@@ -144,7 +143,7 @@ async def handle_text(message: types.Message):
         auth = await authentication(message, first=True)
         if auth:
             return
-        await message.answer("Введіть свій Email і пароль від особистого кабінету\nНаприклад:\nemail@example.com d1v8s3")
+        await message.answer("*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3", parse_mode="Markdown")
         await Form.authorization.set()
     elif message.text == buttons_ua[6] or message.text == buttons_ru[6]:
         await message.answer(c.helper_ua, parse_mode="Markdown")
@@ -213,13 +212,15 @@ async def handle_text(message: types.Message):
         await change_lang(message, 'ua')
 
 
-async def authentication(message, first=False):
+async def authentication(message, first=False, skip=False):
     conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
     cursor = conn.cursor(buffered=True)
     findQuery = "SELECT mail, pass, stud_id, lang FROM users WHERE user_id=(%s)"
     cursor.execute(findQuery, [message.chat.id])
     auth = cursor.fetchone()
     conn.close()
+    if skip:
+        return auth
     if first:
         if auth:
             lang = auth[3]
