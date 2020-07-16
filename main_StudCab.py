@@ -100,10 +100,10 @@ async def feedback(message: types.Message, state: FSMContext):
         strings = json.load(f)
 
     m = str(message.text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
-    if m in {"/exit", sign_in_butt, buttons_ru[0], buttons_ru[1],
-             buttons_ru[2], buttons_ru[3], buttons_ru[4], buttons_ru[5], buttons_ru[6]}:
-        await message.reply(strings[lang]['cancel'])
-        return
+    for exception in ['/exit', sign_in_butt], buttons_ua, buttons_ru:
+        if m in exception:
+            await message.reply(strings[lang]['cancel'])
+            return
     text = f"*Feedback!\n\nUser:* [{message.from_user.full_name}](tg://user?id={message.from_user.id})\n\n{m}"
     await bot.send_message(c.admin, text, parse_mode="Markdown")
     await message.answer(strings[lang]['feedback_finish'])
@@ -144,7 +144,7 @@ async def handle_text(message: types.Message):
         auth = await authentication(message, first=True)
         if auth:
             return
-        await message.answer("Введіть свій Email і пароль від особистого кабінету через пробіл\nНаприклад:\nemail@example.com d1v8s3")
+        await message.answer("Введіть свій Email і пароль від особистого кабінету\nНаприклад:\nemail@example.com d1v8s3")
         await Form.authorization.set()
     elif message.text == buttons_ua[6] or message.text == buttons_ru[6]:
         await message.answer(c.helper_ua, parse_mode="Markdown")
