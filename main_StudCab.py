@@ -17,17 +17,13 @@ dp = Dispatcher(bot, storage=storage)
 
 
 class Form(StatesGroup): authorization = State()
-
-
 class Feedback(StatesGroup): text = State()
-
-
 class SendMessageToUsers(StatesGroup): text = State()
 
 
 sign_in_butt = "👥 Увійти в кабінет"
 buttons_ru = ["ℹ Общая иформация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь", "🇷🇺 Язык"]
-buttons_ua = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "🗓 Навчальний план", "📆 Розклад спорт. каф.", "❓Допомога", "🇺🇦 Мова"]
+buttons_ua = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "🗓 Навчальний план", "📆 Розклад спорт. каф.", "❓Підтримка", "🇺🇦 Мова"]
 
 
 def keyboard_ru():
@@ -62,6 +58,13 @@ def keyboard_ua():
     key.add(but_5, but_6)
     key.add(but_7, but_8)
     return key
+
+
+async def _delete_message(chat_id, message_id):
+    try:
+        await bot.delete_message(chat_id, message_id)
+    except utils.exceptions.MessageCantBeDeleted:
+        pass
 
 
 @dp.message_handler(commands=['start'])
@@ -296,8 +299,8 @@ async def page_2(message, sem):
     with_mark = len(answer)
     subjects = ""
     for a in answer:
-        ez = strings[lang]['page_2_exam']
-        if a['control'] == "З": ez = strings[lang]['page_2_zach']
+        control = strings[lang]['page_2_exam']
+        if a['control'] == "З": control = strings[lang]['page_2_zach']
         hvost = a['if_hvost']
         if not hvost: hvost = "—"
         ball = "{oc_short}{oc_ects} {oc_bol}".format(**a)
@@ -305,7 +308,7 @@ async def page_2(message, sem):
             ball = "—"
             with_mark -= 1
 
-        subjects = strings[lang]['page_2'].format(subjects, a['subject'], ball, ez, a['credit'], hvost).replace("`", "'")
+        subjects = strings[lang]['page_2'].format(subjects, a['subject'], ball, control, a['credit'], hvost).replace("`", "'")
 
     key_histogram = None
     if with_mark > 4:
@@ -368,11 +371,11 @@ async def page_4(message, sem):
     if not answer:
         await message.answer(strings[lang]['not_found'])
         return
-    i = 0
     subjects = "*Курс {kurs}, семестр {semestr}:*\n\n".format(**answer[0])
-    for a in answer:
-        subjects = strings[lang]['page_4'].format(subjects, i + 1, a['subject'], a['audit'], a['credit']).replace("`", "'")
-        i += 1
+    for i, a in enumerate(answer):
+        control = strings[lang]['page_2_exam']
+        if a['control'] == "З": control = strings[lang]['page_2_zach']
+        subjects = strings[lang]['page_4'].format(subjects, i + 1, a['subject'], a['audit'], a['credit'], control).replace("`", "'")
 
     key_histogram = None
     if len(answer) > 4:
@@ -544,20 +547,20 @@ async def send_histogram_of_page_4(message, sem):
 async def callback_inline(callback_query: types.CallbackQuery):
     data = str(callback_query.data)
     if data[0] == "1":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         await page_1(callback_query.message)
     elif data[0] == "2":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         await page_2(callback_query.message, data[1:])
     elif data[0] == "3":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         await page_5(callback_query.message, data[1:])
     elif data[0] == "4":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         await page_4(callback_query.message, data[1:])
 
     elif data[0] == "s":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         s_id = data[1:]
         response = requests.post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
         answer = json.loads(response.text)
@@ -575,17 +578,17 @@ async def callback_inline(callback_query: types.CallbackQuery):
         except utils.exceptions.MessageNotModified: pass
 
     elif data[:8] == "all_list":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         sem = data[8:]
         await show_all_list(callback_query.message, sem)
 
     elif data[:10] == "histogram2":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         sem = data[10:]
         await send_histogram_of_page_2(callback_query.message, sem)
 
     elif data[:10] == "histogram4":
-        await bot.delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
         sem = data[10:]
         await send_histogram_of_page_4(callback_query.message, sem)
 
