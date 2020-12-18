@@ -239,6 +239,14 @@ async def authentication(message, first=False, skip=False):
     return auth
 
 
+async def check_credentials(message, response):
+    response_json = json.loads(response.text)
+    if not response_json:
+        await message.answer("*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3", parse_mode="Markdown")
+        await Form.authorization.set()
+        return True
+
+
 @dp.message_handler(content_types=['text'], state=Form.authorization)
 async def registration(message: types.Message, state: FSMContext):
     s = message.text
@@ -273,6 +281,7 @@ async def page_1(message):
     lang = auth[3]
     page = "1"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    if await check_credentials(message, response): return
     answer = json.loads(response.text)[0]
 
     with open(c.strings_file, encoding='utf-8') as f:
