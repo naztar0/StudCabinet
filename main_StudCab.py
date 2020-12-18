@@ -3,7 +3,7 @@ import requests
 import json
 import constants as c
 import histogram
-import mysql.connector
+from database_connection import DatabaseConnection
 
 from aiogram import Bot, Dispatcher, executor, types, utils
 from aiogram.dispatcher import FSMContext
@@ -124,12 +124,11 @@ async def handle_text(message: types.Message, state: FSMContext):
     if message.text == "/exit":
         await message.answer("Отменено")
         return
-    conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
-    cursor = conn.cursor(buffered=True)
     selectQuery = "SELECT user_id FROM users"
-    cursor.execute(selectQuery)
-    users = cursor.fetchall()
-    conn.close()
+    with DatabaseConnection() as db:
+        conn, cursor = db
+        cursor.execute(selectQuery)
+        users = cursor.fetchall()
     i = 0
     j = 0
     for user in users:
@@ -216,12 +215,11 @@ async def handle_text(message: types.Message):
 
 
 async def authentication(message, first=False, skip=False):
-    conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
-    cursor = conn.cursor(buffered=True)
     findQuery = "SELECT mail, pass, stud_id, lang FROM users WHERE user_id=(%s)"
-    cursor.execute(findQuery, [message.chat.id])
-    auth = cursor.fetchone()
-    conn.close()
+    with DatabaseConnection() as db:
+        conn, cursor = db
+        cursor.execute(findQuery, [message.chat.id])
+        auth = cursor.fetchone()
     if skip:
         return auth
     if first:
@@ -264,12 +262,18 @@ async def registration(message: types.Message, state: FSMContext):
         await message.answer("Неправильний email або пароль")
         return
     student_id = answer[0]['st_cod']
-    conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
-    cursor = conn.cursor(buffered=True)
+    selectQuery = "SELECT EXISTS (SELECT ID FROM users WHERE user_id=(%s))"
     inputQuery = "INSERT INTO users (user_id, stud_id, mail, pass) VALUES (%s, %s, %s, %s)"
-    cursor.executemany(inputQuery, [(message.chat.id, student_id, mail, passwd)])
-    conn.commit()
-    conn.close()
+    updateQuery = "UPDATE users SET mail=(%s), pass=(%s) WHERE user_id=(%s)"
+    with DatabaseConnection() as db:
+        conn, cursor = db
+        cursor.execute(selectQuery, [message.chat.id])
+        exists = cursor.fetchone()[0]
+        if exists:
+            cursor.executemany(updateQuery, [(mail, passwd, message.chat.id)])
+        else:
+            cursor.executemany(inputQuery, [(message.chat.id, student_id, mail, passwd)])
+        conn.commit()
     await message.answer("Вхід успішно виконаний!", reply_markup=keyboard_ua())
 
 
@@ -469,12 +473,11 @@ async def send_pdf(message):
 
 
 async def change_lang(message, lang):
-    conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
-    cursor = conn.cursor(buffered=True)
     changeQuery = f"UPDATE users SET lang=(%s) WHERE user_id=(%s)"
-    cursor.executemany(changeQuery, [(lang, message.chat.id)])
-    conn.commit()
-    conn.close()
+    with DatabaseConnection() as db:
+        conn, cursor = db
+        cursor.executemany(changeQuery, [(lang, message.chat.id)])
+        conn.commit()
     if lang == 'ua':
         text = "Обрана українська мова"
         keyboard = keyboard_ua()
