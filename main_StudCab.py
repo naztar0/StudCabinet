@@ -493,6 +493,7 @@ async def show_all_list(message, sem):
     mail = auth[0]
     passwd = auth[1]
     student_id = auth[2]
+    lang = auth[3]
     page = "5"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
     answer = json.loads(response.text)
@@ -506,6 +507,10 @@ async def show_all_list(message, sem):
         else:
             text += f"*{n}.* {fio} ➖ {sbal100}\n"
     text = text.replace('`', "'")
+    if not text:
+        with open(c.strings_file, encoding='utf-8') as f:
+            strings = json.load(f)
+        text = strings[lang]['not_found']
     await bot.send_message(message.chat.id, text, parse_mode="Markdown")
 
 
