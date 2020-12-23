@@ -63,8 +63,8 @@ def keyboard_ua():
 async def _delete_message(chat_id, message_id):
     try:
         await bot.delete_message(chat_id, message_id)
-    except utils.exceptions.MessageCantBeDeleted:
-        pass
+    except utils.exceptions.MessageCantBeDeleted: pass
+    except utils.exceptions.MessageToDeleteNotFound: pass
 
 
 @dp.message_handler(commands=['start'])
@@ -257,7 +257,18 @@ async def registration(message: types.Message, state: FSMContext):
         return
     page = "1"
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
-    answer = json.loads(response.text)
+    # TODO: just to find out what causes errors, remove in the future
+    try:
+        answer = json.loads(response.text)
+    except json.decoder.JSONDecodeError:
+        print("ERROR:")
+        print("Response:", response)
+        print("Text:", response.text)
+        print("Mail:", mail)
+        print("Pass:", passwd)
+        await message.answer("Виникла помилка, спробуйте пізніше.\nМожливо неправильний email або пароль.")
+        return
+    # TODO: END
     if not answer:
         await message.answer("Неправильний email або пароль")
         return
