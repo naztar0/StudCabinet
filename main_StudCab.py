@@ -545,7 +545,7 @@ async def send_histogram_of_page_2(message, sem):
     response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=1')
     answer = json.loads(response.text)[0]
     histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer))
-    with open("media/img.jpg", "rb") as f:
+    with open("media/img.png", "rb") as f:
         img = f.read()
     await bot.send_photo(message.chat.id, img)
 
@@ -566,7 +566,7 @@ async def send_histogram_of_page_4(message, sem):
         subject.append(n['subject'])
         count += 1
     histogram.histogram(count, score, subject, f"Семестр {sem}")
-    with open("media/img.jpg", "rb") as f:
+    with open("media/img.png", "rb") as f:
         img = f.read()
     await bot.send_photo(message.chat.id, img)
 
