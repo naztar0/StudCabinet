@@ -562,7 +562,7 @@ async def send_histogram_of_page_4(message, sem):
     score = []
     count = 0
     for n in answer:
-        score.append(int(float(n['credit'])))
+        score.append(int(float(n['credit']))) if n['credit'] else score.append(0)
         subject.append(n['subject'])
         count += 1
     histogram.histogram(count, score, subject, f"Семестр {sem}")
