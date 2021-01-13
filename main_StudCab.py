@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import requests
 import json
+from asyncio import sleep
 import constants as c
 import histogram
 from database_connection import DatabaseConnection
+import record_book
 
 from aiogram import Bot, Dispatcher, executor, types, utils
 from aiogram.dispatcher import FSMContext
@@ -65,6 +67,16 @@ async def _delete_message(chat_id, message_id):
         await bot.delete_message(chat_id, message_id)
     except utils.exceptions.MessageCantBeDeleted: pass
     except utils.exceptions.MessageToDeleteNotFound: pass
+
+
+async def _send_message(user_id, text):
+    try:
+        await bot.send_message(user_id, text)
+    except utils.exceptions.BotBlocked: return
+    except utils.exceptions.UserDeactivated: return
+    except utils.exceptions.ChatNotFound: return
+    except utils.exceptions.BadRequest: return
+    return True
 
 
 @dp.message_handler(commands=['start'])
@@ -131,12 +143,16 @@ async def handle_text(message: types.Message, state: FSMContext):
         users = cursor.fetchall()
     i = 0
     j = 0
+    blocked = []
     for user in users:
-        try:
-            await bot.send_message(user[0], message.text)
+        if _send_message(user[0], message.text):
             i += 1
-        except utils.exceptions.BotBlocked: j += 1
-    await message.answer(f"Отправлено: {i}\nНе отправлено: {j}")
+        else:
+            j += 1
+            blocked.append(user[0])
+        await sleep(.05)
+    blocked = '\n'.join(blocked)
+    await message.answer(f"Отправлено: {i}\nНе отправлено: {j}\n\n{blocked}")
 
 
 @dp.message_handler(content_types=['text'])
@@ -148,7 +164,7 @@ async def handle_text(message: types.Message):
         await message.answer("*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3", parse_mode="Markdown")
         await Form.authorization.set()
     elif message.text == buttons_ua[6] or message.text == buttons_ru[6]:
-        await message.answer(c.helper_ua, parse_mode="Markdown")
+        await message.answer(c.helper_ua, parse_mode="Markdown", disable_web_page_preview=True)
     elif message.text == buttons_ua[0] or message.text == buttons_ru[0]:
         await page_1(message)
     elif message.text == buttons_ua[1] or message.text == buttons_ru[1]:
@@ -622,4 +638,6 @@ async def callback_inline(callback_query: types.CallbackQuery):
 
 
 if __name__ == '__main__':
+    dp.loop.create_task(record_book.updater())
+    dp.loop.create_task(record_book.update_users())
     executor.start_polling(dp, skip_updates=True)
