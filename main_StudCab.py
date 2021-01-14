@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import requests
 import json
 from asyncio import sleep
 import constants as c
+import my_utils as mu
+from settings import DEBUG
 import histogram
 from database_connection import DatabaseConnection
 import record_book
@@ -26,6 +27,7 @@ class SendMessageToUsers(StatesGroup): text = State()
 sign_in_butt = "👥 Увійти в кабінет"
 buttons_ru = ["ℹ Общая иформация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь", "🇷🇺 Язык"]
 buttons_ua = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "🗓 Навчальний план", "📆 Розклад спорт. каф.", "❓Підтримка", "🇺🇦 Мова"]
+req_err_msg = "😔 Не вдалося виконати запит, спробуйте пізніше"
 
 
 def keyboard_ru():
@@ -60,23 +62,6 @@ def keyboard_ua():
     key.add(but_5, but_6)
     key.add(but_7, but_8)
     return key
-
-
-async def _delete_message(chat_id, message_id):
-    try:
-        await bot.delete_message(chat_id, message_id)
-    except utils.exceptions.MessageCantBeDeleted: pass
-    except utils.exceptions.MessageToDeleteNotFound: pass
-
-
-async def _send_message(user_id, text):
-    try:
-        await bot.send_message(user_id, text)
-    except utils.exceptions.BotBlocked: return
-    except utils.exceptions.UserDeactivated: return
-    except utils.exceptions.ChatNotFound: return
-    except utils.exceptions.BadRequest: return
-    return True
 
 
 @dp.message_handler(commands=['start'])
@@ -145,7 +130,7 @@ async def handle_text(message: types.Message, state: FSMContext):
     j = 0
     blocked = []
     for user in users:
-        if _send_message(user[0], message.text):
+        if await mu.send_message(bot.send_message, utils, chat_id=user[0], text=message.text):
             i += 1
         else:
             j += 1
@@ -272,7 +257,10 @@ async def registration(message: types.Message, state: FSMContext):
         await message.answer("Невірний формат")
         return
     page = "1"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     # TODO: just to find out what causes errors, remove in the future
     try:
         answer = json.loads(response.text)
@@ -311,7 +299,10 @@ async def page_1(message):
     passwd = auth[1]
     lang = auth[3]
     page = "1"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     if await check_credentials(message, response): return
     answer = json.loads(response.text)[0]
 
@@ -328,7 +319,10 @@ async def page_2(message, sem):
     passwd = auth[1]
     lang = auth[3]
     page = "2"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
 
     with open(c.strings_file, encoding='utf-8') as f:
@@ -365,11 +359,19 @@ async def page_5(message, sem):
     student_id = auth[2]
     lang = auth[3]
     page = "5"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    print(1)
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    print(2)
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
+    if not answer:
+        await message.answer(strings[lang]['not_found'])
+        return
     all_in_list = len(answer)
     for a in answer:
         if int(a['studid']) == student_id:
@@ -377,7 +379,7 @@ async def page_5(message, sem):
             num = int(a['n'])
             break
     else:
-        await message.answer(strings[lang]['not_found'])
+        await show_all_list(message, sem)
         return
     percent = float("%.2f" % (num * 100 / all_in_list))
     percent_str = strings[lang]['page_5_rate'].format(percent)
@@ -403,7 +405,10 @@ async def page_4(message, sem):
     passwd = auth[1]
     lang = auth[3]
     page = "4"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
 
     with open(c.strings_file, encoding='utf-8') as f:
@@ -431,7 +436,10 @@ async def page_3(message):
     passwd = auth[1]
     lang = auth[3]
     page = "3"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
 
     with open(c.strings_file, encoding='utf-8') as f:
@@ -449,7 +457,10 @@ async def page_sport(message):
     auth = await authentication(message)
     if not auth: return
     lang = auth[3]
-    response = requests.post('https://schedule.kpi.kharkov.ua/json/sport')
+    response = mu.req_post('https://schedule.kpi.kharkov.ua/json/sport')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
 
     with open(c.strings_file, encoding='utf-8') as f:
@@ -481,7 +492,9 @@ def days(s_id):
 def get_schedule(s_id, day):
     day_names = ["", "Понеділок", "Вівторок", "Середа", "Четвер", "П`ятниця", "Субота", "Неділя"]
     day = day_names[day]
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
+    if not response:
+        return
     answer = json.loads(response.text)
     text = f"{day}:\n\n"
     for a in answer:
@@ -522,7 +535,10 @@ async def show_all_list(message, sem):
     student_id = auth[2]
     lang = auth[3]
     page = "5"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
     text = ""
     for a in answer:
@@ -547,7 +563,10 @@ async def send_histogram_of_page_2(message, sem):
     mail = auth[0]
     passwd = auth[1]
     page = "2"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
     subject = []
     score = []
@@ -558,7 +577,10 @@ async def send_histogram_of_page_2(message, sem):
         score.append(int(n['oc_bol']))
         subject.append(n['subject'])
         count += 1
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=1')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=1')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)[0]
     histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer))
     with open("media/img.png", "rb") as f:
@@ -572,7 +594,10 @@ async def send_histogram_of_page_4(message, sem):
     mail = auth[0]
     passwd = auth[1]
     page = "4"
-    response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
     answer = json.loads(response.text)
     subject = []
     score = []
@@ -591,53 +616,65 @@ async def send_histogram_of_page_4(message, sem):
 async def callback_inline(callback_query: types.CallbackQuery):
     data = str(callback_query.data)
     if data[0] == "1":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         await page_1(callback_query.message)
     elif data[0] == "2":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         await page_2(callback_query.message, data[1:])
     elif data[0] == "3":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         await page_5(callback_query.message, data[1:])
     elif data[0] == "4":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         await page_4(callback_query.message, data[1:])
 
     elif data[0] == "s":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         s_id = data[1:]
-        response = requests.post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
+        response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
+        if not response:
+            await callback_query.answer(req_err_msg, show_alert=True)
+            return
         answer = json.loads(response.text)
         if not answer:
             await callback_query.answer("Не найдено", show_alert=True)
             return
-        await bot.send_message(callback_query.from_user.id, get_schedule(s_id, 1), reply_markup=days(s_id))
+        schedule = get_schedule(s_id, 1)
+        if not schedule:
+            await callback_query.answer(req_err_msg, show_alert=True)
+            return
+        await callback_query.message.answer(schedule, reply_markup=days(s_id))
 
     elif data[:3] == "day":
         day = int(data[3])
         s_id = data[4:]
         try:
-            await bot.edit_message_text(get_schedule(s_id, day), callback_query.from_user.id,
+            schedule = get_schedule(s_id, day)
+            if not schedule:
+                await callback_query.answer(req_err_msg, show_alert=True)
+                return
+            await bot.edit_message_text(schedule, callback_query.from_user.id,
                                         callback_query.message.message_id, callback_query.from_user.id, reply_markup=days(s_id))
         except utils.exceptions.MessageNotModified: pass
 
     elif data[:8] == "all_list":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         sem = data[8:]
         await show_all_list(callback_query.message, sem)
 
     elif data[:10] == "histogram2":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         sem = data[10:]
         await send_histogram_of_page_2(callback_query.message, sem)
 
     elif data[:10] == "histogram4":
-        await _delete_message(callback_query.message.chat.id, callback_query.message.message_id)
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         sem = data[10:]
         await send_histogram_of_page_4(callback_query.message, sem)
 
 
 if __name__ == '__main__':
-    dp.loop.create_task(record_book.updater())
-    dp.loop.create_task(record_book.update_users())
+    if not DEBUG:
+        dp.loop.create_task(record_book.updater())
+        dp.loop.create_task(record_book.update_users())
     executor.start_polling(dp, skip_updates=True)

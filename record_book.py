@@ -3,22 +3,12 @@ import requests
 import json
 import constants as c
 from database_connection import DatabaseConnection
+from my_utils import send_message
 from asyncio import sleep
 from time import time
-from aiogram import Bot, Dispatcher, utils
+from aiogram import Bot, utils
 
 bot = Bot(c.token)
-dp = Dispatcher(bot)
-
-
-async def _send_message(user_id, text):
-    try:
-        await bot.send_message(user_id, text, parse_mode='Markdown')
-    except utils.exceptions.BotBlocked: return
-    except utils.exceptions.UserDeactivated: return
-    except utils.exceptions.ChatNotFound: return
-    except utils.exceptions.BadRequest: return
-    return True
 
 
 async def send_update(user_id, sem, data):
@@ -27,7 +17,7 @@ async def send_update(user_id, sem, data):
                f"📆 *Семестр:* {sem}\n" \
                f"📚 *Дисципліна:* {data['subject']}\n" \
                f"✅ *Оцінка:* {ball}"
-    await _send_message(user_id, str_send.replace("`", "'"))
+    await send_message(bot.send_message, utils, chat_id=user_id, text=str_send.replace("`", "'"))
     print(user_id, str_send)  # TODO: just for test, remove in future
 
 
