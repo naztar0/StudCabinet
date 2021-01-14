@@ -359,9 +359,7 @@ async def page_5(message, sem):
     student_id = auth[2]
     lang = auth[3]
     page = "5"
-    print(1)
     response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
-    print(2)
     if not response:
         await message.answer(req_err_msg)
         return
@@ -482,14 +480,14 @@ def days(s_id):
     but_4 = types.InlineKeyboardButton("Чт", callback_data=f"day4{s_id}")
     but_5 = types.InlineKeyboardButton("Пт", callback_data=f"day5{s_id}")
     but_6 = types.InlineKeyboardButton("Сб", callback_data=f"day6{s_id}")
-    but_7 = types.InlineKeyboardButton("Вс", callback_data=f"day7{s_id}")
+    but_7 = types.InlineKeyboardButton("Нд", callback_data=f"day7{s_id}")
     key.add(but_1, but_2, but_3)
     key.add(but_4, but_5)
     key.add(but_6, but_7)
     return key
 
 
-def get_schedule(s_id, day):
+def get_sport_schedule(s_id, day):
     day_names = ["", "Понеділок", "Вівторок", "Середа", "Четвер", "П`ятниця", "Субота", "Неділя"]
     day = day_names[day]
     response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
@@ -639,7 +637,7 @@ async def callback_inline(callback_query: types.CallbackQuery):
         if not answer:
             await callback_query.answer("Не найдено", show_alert=True)
             return
-        schedule = get_schedule(s_id, 1)
+        schedule = get_sport_schedule(s_id, 1)
         if not schedule:
             await callback_query.answer(req_err_msg, show_alert=True)
             return
@@ -649,7 +647,7 @@ async def callback_inline(callback_query: types.CallbackQuery):
         day = int(data[3])
         s_id = data[4:]
         try:
-            schedule = get_schedule(s_id, day)
+            schedule = get_sport_schedule(s_id, day)
             if not schedule:
                 await callback_query.answer(req_err_msg, show_alert=True)
                 return
