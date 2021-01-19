@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-import requests
 import json
 import constants as c
 from database_connection import DatabaseConnection
-from my_utils import send_message
+from my_utils import send_message, req_post
 from asyncio import sleep
 from time import time
 from aiogram import Bot, utils
@@ -31,7 +30,9 @@ async def updater():
             results = cursor.fetchall()
         for item in results:
             select_id, subj_id, semester, mail, passwd, user_id = item
-            response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={semester}')
+            response = req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={semester}')
+            if not response:
+                continue
             rec_book = json.loads(response.text)
             if not rec_book:
                 continue
@@ -69,7 +70,9 @@ async def update_users():
         for res in results:
             user_id, mail, passwd = res
             for sem in range(1, 13):
-                response = requests.post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={sem}')
+                response = req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={sem}')
+                if not response:
+                    continue
                 rec_book = json.loads(response.text)
                 if not rec_book:
                     break

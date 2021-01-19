@@ -280,6 +280,9 @@ async def registration(message: types.Message, state: FSMContext):
     selectQuery = "SELECT EXISTS (SELECT ID FROM users WHERE user_id=(%s))"
     inputQuery = "INSERT INTO users (user_id, stud_id, mail, pass) VALUES (%s, %s, %s, %s)"
     updateQuery = "UPDATE users SET mail=(%s), pass=(%s) WHERE user_id=(%s)"
+    selectUserQuery = "SELECT ID FROM users WHERE user_id=(%s)"
+    existsRecBookQuery = "SELECT EXISTS (SELECT ID FROM record_book WHERE user_id=(%s) AND subj_id=(%s) AND semester=(%s))"
+    insertRecBookQuery = "INSERT INTO record_book (user_id, subj_id, semester) VALUES (%s, %s, %s)"
     with DatabaseConnection() as db:
         conn, cursor = db
         cursor.execute(selectQuery, [message.chat.id])
@@ -290,6 +293,29 @@ async def registration(message: types.Message, state: FSMContext):
             cursor.executemany(inputQuery, [(message.chat.id, student_id, mail, passwd)])
         conn.commit()
     await message.answer("Вхід успішно виконаний!", reply_markup=keyboard_ua())
+    with DatabaseConnection() as db:
+        conn, cursor = db
+        cursor.execute(selectUserQuery, [message.chat.id])
+        user_id = cursor.fetchone()[0]
+    for sem in range(1, 13):
+        response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={sem}')
+        if not response:
+            continue
+        rec_book = json.loads(response.text)
+        if not rec_book:
+            break
+        for a in rec_book:
+            mark = a['oc_bol']
+            if mark:
+                continue
+            subj_id = int(a['subj_id'])
+            with DatabaseConnection() as db:
+                conn, cursor = db
+                cursor.executemany(existsRecBookQuery, [(user_id, subj_id, sem)])
+                exists = cursor.fetchone()[0]
+                if exists == 0:
+                    cursor.executemany(insertRecBookQuery, [(user_id, subj_id, sem)])
+                    conn.commit()
 
 
 async def page_1(message):
