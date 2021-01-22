@@ -251,8 +251,8 @@ async def registration(message: types.Message, state: FSMContext):
     s = message.text
     await state.finish()
     try:
-        mail = s.split(" ")[0]
-        passwd = s.split(" ")[1]
+        mail = s.split()[0]
+        passwd = s.split()[1]
     except IndexError:
         await message.answer("Невірний формат")
         return
@@ -261,18 +261,7 @@ async def registration(message: types.Message, state: FSMContext):
     if not response:
         await message.answer(req_err_msg)
         return
-    # TODO: just to find out what causes errors, remove in the future
-    try:
-        answer = json.loads(response.text)
-    except json.decoder.JSONDecodeError:
-        print("ERROR:")
-        print("Response:", response)
-        print("Text:", response.text)
-        print("Mail:", mail)
-        print("Pass:", passwd)
-        await message.answer("Виникла помилка, спробуйте пізніше.\nМожливо неправильний email або пароль.")
-        return
-    # TODO: END
+    answer = json.loads(response.text)
     if not answer:
         await message.answer("Неправильний email або пароль")
         return
