@@ -46,7 +46,7 @@ async def updater():
                             cursor.execute(deleteQuery, [select_id])
                             conn.commit()
             await sleep(0.1)
-        await sleep(10800)  # 3 hrs
+        await sleep(1200)  # 20 min
 
 
 async def update_users():
