@@ -16,7 +16,7 @@ async def send_update(user_id, sem, data):
                f"📆 *Семестр:* {sem}\n" \
                f"📚 *Дисципліна:* {data['subject']}\n" \
                f"✅ *Оцінка:* {ball}"
-    await send_message(bot.send_message, utils, chat_id=user_id, text=str_send.replace("`", "'"))
+    await send_message(bot.send_message, utils, chat_id=user_id, text=str_send.replace("`", "'"), parse_mode='Markdown')
 
 
 async def updater():
