@@ -25,7 +25,7 @@ class SendMessageToUsers(StatesGroup): text = State()
 
 
 sign_in_butt = "👥 Увійти в кабінет"
-buttons_ru = ["ℹ Общая иформация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь", "🇷🇺 Язык"]
+buttons_ru = ["ℹ Общая информация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь", "🇷🇺 Язык"]
 buttons_ua = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "🗓 Навчальний план", "📆 Розклад спорт. каф.", "❓Підтримка", "🇺🇦 Мова"]
 req_err_msg = "😔 Не вдалося виконати запит, спробуйте пізніше"
 
@@ -111,7 +111,7 @@ async def feedback(message: types.Message, state: FSMContext):
 @dp.message_handler(commands=['send'])
 async def handle_text(message: types.Message):
     if message.chat.id == c.admin:
-        await message.answer("Введите сообщение для отправки пользователям\n\nОтмена - [/exit]")
+        await message.answer("Введите сообщение для отправки пользователям (Markdown)\n\nОтмена - [/exit]")
         await SendMessageToUsers.text.set()
 
 
@@ -121,6 +121,12 @@ async def handle_text(message: types.Message, state: FSMContext):
     if message.text == "/exit":
         await message.answer("Отменено")
         return
+    try:
+        test = await message.answer(message.text, parse_mode='Markdown')
+    except utils.exceptions.CantParseEntities:
+        await message.answer("Неверный формат Markdown!")
+        return
+    await bot.delete_message(message.chat.id, test.message_id)
     selectQuery = "SELECT user_id FROM users"
     with DatabaseConnection() as db:
         conn, cursor = db
@@ -130,7 +136,7 @@ async def handle_text(message: types.Message, state: FSMContext):
     j = 0
     blocked = []
     for user in users:
-        if await mu.send_message(bot.send_message, utils, chat_id=user[0], text=message.text):
+        if await mu.send_message(bot.send_message, utils, chat_id=user[0], text=message.text, parse_mode='Markdown'):
             i += 1
         else:
             j += 1
@@ -209,6 +215,8 @@ async def handle_text(message: types.Message):
         await page_sport(message)
     elif message.text == "/pdf":
         await send_pdf(message)
+    elif message.text == "/payment":
+        await page_6(message)
     elif message.text == buttons_ua[7]:
         await change_lang(message, 'ru')
     elif message.text == buttons_ru[7]:
@@ -463,6 +471,30 @@ async def page_3(message):
     subjects = ""
     for a in answer:
         subjects = strings[lang]['page_3'].format(subjects, a['subject'], a['prepod'], a['data']).replace("`", "'")
+    await message.answer(subjects, parse_mode="Markdown")
+
+
+async def page_6(message):
+    auth = await authentication(message)
+    if not auth: return
+    mail = auth[0]
+    passwd = auth[1]
+    lang = auth[3]
+    page = "6"
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
+    answer = json.loads(response.text)
+
+    with open(c.strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
+    if not answer:
+        await message.answer(strings[lang]['not_found'])
+        return
+    subjects = strings[lang]['page_6_header'].format(answer[0]['dog_name'], answer[0]['start_date'], answer[0]['dog_price'])
+    for a in answer:
+        subjects = strings[lang]['page_6'].format(subjects, a['term_start'], a['paid_date'], a['paid_value'], a['dp_id']).replace("`", "'")
     await message.answer(subjects, parse_mode="Markdown")
 
 
