@@ -140,7 +140,7 @@ async def handle_text(message: types.Message, state: FSMContext):
             i += 1
         else:
             j += 1
-            blocked.append(user[0])
+            blocked.append(str(user[0]))
         await sleep(.05)
     blocked = '\n'.join(blocked)
     await message.answer(f"Отправлено: {i}\nНе отправлено: {j}\n\n{blocked}")
