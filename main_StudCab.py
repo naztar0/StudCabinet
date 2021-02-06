@@ -772,15 +772,18 @@ async def callback_inline(callback_query: types.CallbackQuery):
         s_id = data[1:]
         response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
         if not response:
-            await callback_query.answer(req_err_msg, show_alert=True)
+            try: await callback_query.answer(req_err_msg, show_alert=True)
+            except utils.exceptions.InvalidQueryID: pass
             return
         answer = json.loads(response.text)
         if not answer:
-            await callback_query.answer("Не найдено", show_alert=True)
+            try: await callback_query.answer("Не найдено", show_alert=True)
+            except utils.exceptions.InvalidQueryID: pass
             return
         schedule = get_sport_schedule(s_id, 1)
         if not schedule:
-            await callback_query.answer(req_err_msg, show_alert=True)
+            try: await callback_query.answer(req_err_msg, show_alert=True)
+            except utils.exceptions.InvalidQueryID: pass
             return
         await callback_query.message.answer(schedule, reply_markup=days(s_id))
 
@@ -790,7 +793,8 @@ async def callback_inline(callback_query: types.CallbackQuery):
         try:
             schedule = get_sport_schedule(s_id, day)
             if not schedule:
-                await callback_query.answer(req_err_msg, show_alert=True)
+                try: await callback_query.answer(req_err_msg, show_alert=True)
+                except utils.exceptions.InvalidQueryID: pass
                 return
             await bot.edit_message_text(schedule, callback_query.from_user.id,
                                         callback_query.message.message_id, callback_query.from_user.id, reply_markup=days(s_id))
