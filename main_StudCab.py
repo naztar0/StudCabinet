@@ -325,8 +325,9 @@ async def registration(message: types.Message, state: FSMContext):
         await message.answer("Неправильний email або пароль")
         return
     student_id = answer[0]['st_cod']
+    group_id = answer[0]['gid']
     selectQuery = "SELECT EXISTS (SELECT ID FROM users WHERE user_id=(%s))"
-    inputQuery = "INSERT INTO users (user_id, stud_id, mail, pass) VALUES (%s, %s, %s, %s)"
+    inputQuery = "INSERT INTO users (user_id, stud_id, group_id, mail, pass) VALUES (%s, %s, %s, %s, %s)"
     updateQuery = "UPDATE users SET mail=(%s), pass=(%s) WHERE user_id=(%s)"
     selectUserQuery = "SELECT ID FROM users WHERE user_id=(%s)"
     existsRecBookQuery = "SELECT EXISTS (SELECT ID FROM record_book WHERE user_id=(%s) AND subj_id=(%s) AND semester=(%s))"
@@ -338,7 +339,7 @@ async def registration(message: types.Message, state: FSMContext):
         if exists:
             cursor.executemany(updateQuery, [(mail, passwd, message.chat.id)])
         else:
-            cursor.executemany(inputQuery, [(message.chat.id, student_id, mail, passwd)])
+            cursor.executemany(inputQuery, [(message.chat.id, student_id, group_id, mail, passwd)])
         conn.commit()
     await message.answer("Вхід успішно виконаний!", reply_markup=keyboard_ua_1())
     with DatabaseConnection() as db:
