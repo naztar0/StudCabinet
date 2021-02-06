@@ -25,21 +25,23 @@ class SendMessageToUsers(StatesGroup): text = State()
 
 
 sign_in_butt = "👥 Увійти в кабінет"
-buttons_ru = ["ℹ Общая информация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "🗓 Учебный план", "📆 Расписание спорт. каф.", "❓Помощь", "🇷🇺 Язык"]
-buttons_ua = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "🗓 Навчальний план", "📆 Розклад спорт. каф.", "❓Підтримка", "🇺🇦 Мова"]
+buttons_ru_1 = ["ℹ Общая информация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "📆 Расписание занятий", "📆 Расписание спорт. каф.", "🗓 Учебный план", "➡ Другое"]
+buttons_ua_1 = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "📆 Розклад занять", "📆 Розклад спорт. каф.", "🗓 Навчальний план", "➡ Інше"]
+buttons_ru_2 = ["💳 Оплаты за обучение", "📄 Семестровый план", "❓Помощь", "🇷🇺 Язык", "⬅  Назад"]
+buttons_ua_2 = ["💳 Оплати за навчання", "📄 Семестровий план", "❓Підтримка", "🇺🇦 Мова", "⬅ Назад"]
 req_err_msg = "😔 Не вдалося виконати запит, спробуйте пізніше"
 
 
-def keyboard_ru():
+def keyboard_ru_1():
     key = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    but_1 = types.KeyboardButton(buttons_ru[0])
-    but_2 = types.KeyboardButton(buttons_ru[1])
-    but_3 = types.KeyboardButton(buttons_ru[2])
-    but_4 = types.KeyboardButton(buttons_ru[3])
-    but_5 = types.KeyboardButton(buttons_ru[4])
-    but_6 = types.KeyboardButton(buttons_ru[5])
-    but_7 = types.KeyboardButton(buttons_ru[6])
-    but_8 = types.KeyboardButton(buttons_ru[7])
+    but_1 = types.KeyboardButton(buttons_ru_1[0])
+    but_2 = types.KeyboardButton(buttons_ru_1[1])
+    but_3 = types.KeyboardButton(buttons_ru_1[2])
+    but_4 = types.KeyboardButton(buttons_ru_1[3])
+    but_5 = types.KeyboardButton(buttons_ru_1[4])
+    but_6 = types.KeyboardButton(buttons_ru_1[5])
+    but_7 = types.KeyboardButton(buttons_ru_1[6])
+    but_8 = types.KeyboardButton(buttons_ru_1[7])
     key.add(but_1, but_2)
     key.add(but_3, but_4)
     key.add(but_5, but_6)
@@ -47,20 +49,46 @@ def keyboard_ru():
     return key
 
 
-def keyboard_ua():
+def keyboard_ua_1():
     key = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    but_1 = types.KeyboardButton(buttons_ua[0])
-    but_2 = types.KeyboardButton(buttons_ua[1])
-    but_3 = types.KeyboardButton(buttons_ua[2])
-    but_4 = types.KeyboardButton(buttons_ua[3])
-    but_5 = types.KeyboardButton(buttons_ua[4])
-    but_6 = types.KeyboardButton(buttons_ua[5])
-    but_7 = types.KeyboardButton(buttons_ua[6])
-    but_8 = types.KeyboardButton(buttons_ua[7])
+    but_1 = types.KeyboardButton(buttons_ua_1[0])
+    but_2 = types.KeyboardButton(buttons_ua_1[1])
+    but_3 = types.KeyboardButton(buttons_ua_1[2])
+    but_4 = types.KeyboardButton(buttons_ua_1[3])
+    but_5 = types.KeyboardButton(buttons_ua_1[4])
+    but_6 = types.KeyboardButton(buttons_ua_1[5])
+    but_7 = types.KeyboardButton(buttons_ua_1[6])
+    but_8 = types.KeyboardButton(buttons_ua_1[7])
     key.add(but_1, but_2)
     key.add(but_3, but_4)
     key.add(but_5, but_6)
     key.add(but_7, but_8)
+    return key
+
+
+def keyboard_ru_2():
+    key = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    but_1 = types.KeyboardButton(buttons_ru_2[0])
+    but_2 = types.KeyboardButton(buttons_ru_2[1])
+    but_3 = types.KeyboardButton(buttons_ru_2[2])
+    but_4 = types.KeyboardButton(buttons_ru_2[3])
+    but_5 = types.KeyboardButton(buttons_ru_2[4])
+    key.add(but_1, but_2)
+    key.add(but_3, but_4)
+    key.add(but_5)
+    return key
+
+
+def keyboard_ua_2():
+    key = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    but_1 = types.KeyboardButton(buttons_ua_2[0])
+    but_2 = types.KeyboardButton(buttons_ua_2[1])
+    but_3 = types.KeyboardButton(buttons_ua_2[2])
+    but_4 = types.KeyboardButton(buttons_ua_2[3])
+    but_5 = types.KeyboardButton(buttons_ua_2[4])
+    key.add(but_1, but_2)
+    key.add(but_3, but_4)
+    key.add(but_5)
     return key
 
 
@@ -72,7 +100,7 @@ async def handle_text(message: types.Message):
 async def reg_key(message):
     key = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     but_1 = types.KeyboardButton(sign_in_butt)
-    but_2 = types.KeyboardButton(buttons_ua[6])
+    but_2 = types.KeyboardButton(buttons_ua_1[6])
     key.add(but_1)
     key.add(but_2)
     await message.answer("Щоб продовжити натисніть на одну з кнопок", reply_markup=key)
@@ -88,7 +116,7 @@ async def handle_text(message: types.Message):
     await Feedback.text.set()
 
 
-@dp.message_handler(content_types=['text'], state=Feedback.text)
+@dp.message_handler(content_types=[types.ContentType.ANY], state=Feedback.text)
 async def feedback(message: types.Message, state: FSMContext):
     await state.finish()
 
@@ -97,14 +125,15 @@ async def feedback(message: types.Message, state: FSMContext):
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
 
-    m = str(message.text).replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
-    for exception in ['/exit', sign_in_butt], buttons_ua, buttons_ru:
-        if m in exception:
-            await message.reply(strings[lang]['cancel'])
-            return
+    if message.text:
+        for exception in ['/exit', sign_in_butt], buttons_ua_1, buttons_ru_1:
+            if message.text in exception:
+                await message.reply(strings[lang]['cancel'])
+                return
     text = f"*Feedback!\n\nUser:* [{message.from_user.full_name}](tg://user?id={message.from_user.id})\n" \
-           f"*UserName:* @{message.from_user.username}\n*ID:* {message.from_user.id}\n\n{m}"
+           f"*UserName:* @{message.from_user.username}\n*ID:* {message.from_user.id}"
     await bot.send_message(c.admin, text, parse_mode="Markdown")
+    await bot.forward_message(c.admin, message.chat.id, message.message_id)
     await message.answer(strings[lang]['feedback_finish'])
 
 
@@ -154,11 +183,13 @@ async def handle_text(message: types.Message):
             return
         await message.answer("*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3", parse_mode="Markdown")
         await Form.authorization.set()
-    elif message.text == buttons_ua[6] or message.text == buttons_ru[6]:
+    elif message.text == buttons_ua_2[2]:
         await message.answer(c.helper_ua, parse_mode="Markdown", disable_web_page_preview=True)
-    elif message.text == buttons_ua[0] or message.text == buttons_ru[0]:
+    elif message.text == buttons_ru_2[2]:
+        await message.answer(c.helper_ru, parse_mode="Markdown", disable_web_page_preview=True)
+    elif message.text == buttons_ua_1[0] or message.text == buttons_ru_1[0]:
         await page_1(message)
-    elif message.text == buttons_ua[1] or message.text == buttons_ru[1]:
+    elif message.text == buttons_ua_1[1] or message.text == buttons_ru_1[1]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="21")
         a2 = types.InlineKeyboardButton(text="2", callback_data="22")
@@ -175,7 +206,7 @@ async def handle_text(message: types.Message):
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
         await message.answer("Семестр", reply_markup=key)
-    elif message.text == buttons_ua[2] or message.text == buttons_ru[2]:
+    elif message.text == buttons_ua_1[2] or message.text == buttons_ru_1[2]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="31")
         a2 = types.InlineKeyboardButton(text="2", callback_data="32")
@@ -192,7 +223,7 @@ async def handle_text(message: types.Message):
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
         await message.answer("Семестр", reply_markup=key)
-    elif message.text == buttons_ua[4] or message.text == buttons_ru[4]:
+    elif message.text == buttons_ua_1[6] or message.text == buttons_ru_1[6]:
         key = types.InlineKeyboardMarkup()
         a1 = types.InlineKeyboardButton(text="1", callback_data="41")
         a2 = types.InlineKeyboardButton(text="2", callback_data="42")
@@ -209,22 +240,42 @@ async def handle_text(message: types.Message):
         key.add(a1, a2, a3, a4, a5, a6)
         key.add(a7, a8, a9, a10, a11, a12)
         await message.answer("Семестр", reply_markup=key)
-    elif message.text == buttons_ua[3] or message.text == buttons_ru[3]:
+    elif message.text == buttons_ua_1[4]:
+        key = types.InlineKeyboardMarkup()
+        a1 = types.InlineKeyboardButton(text="1", callback_data="51")
+        a2 = types.InlineKeyboardButton(text="2", callback_data="52")
+        key.add(a1, a2)
+        await message.answer("Тиждень", reply_markup=key)
+    elif message.text == buttons_ru_1[4]:
+        key = types.InlineKeyboardMarkup()
+        a1 = types.InlineKeyboardButton(text="1", callback_data="51")
+        a2 = types.InlineKeyboardButton(text="2", callback_data="52")
+        key.add(a1, a2)
+        await message.answer("Неделя", reply_markup=key)
+    elif message.text == buttons_ua_1[3] or message.text == buttons_ru_1[3]:
         await page_3(message)
-    elif message.text == buttons_ua[5] or message.text == buttons_ru[5]:
+    elif message.text == buttons_ua_1[5] or message.text == buttons_ru_1[5]:
         await page_sport(message)
-    elif message.text == "/pdf":
-        await send_pdf(message)
-    elif message.text == "/payment":
+    elif message.text == buttons_ua_2[0] or message.text == buttons_ru_2[0]:
         await page_6(message)
-    elif message.text == buttons_ua[7]:
+    elif message.text == buttons_ua_2[1] or message.text == buttons_ru_2[1]:
+        await send_pdf(message)
+    elif message.text == buttons_ua_2[3]:
         await change_lang(message, 'ru')
-    elif message.text == buttons_ru[7]:
+    elif message.text == buttons_ru_2[3]:
         await change_lang(message, 'ua')
+    elif message.text == buttons_ua_1[7]:
+        await message.answer(buttons_ua_1[7], reply_markup=keyboard_ua_2())
+    elif message.text == buttons_ru_1[7]:
+        await message.answer(buttons_ru_1[7], reply_markup=keyboard_ru_2())
+    elif message.text == buttons_ua_2[4]:
+        await message.answer(buttons_ua_2[4], reply_markup=keyboard_ua_1())
+    elif message.text == buttons_ru_2[4]:
+        await message.answer(buttons_ru_2[4], reply_markup=keyboard_ru_1())
 
 
 async def authentication(message, first=False, skip=False):
-    findQuery = "SELECT mail, pass, stud_id, lang FROM users WHERE user_id=(%s)"
+    findQuery = "SELECT mail, pass, stud_id, lang, group_id FROM users WHERE user_id=(%s)"
     with DatabaseConnection() as db:
         conn, cursor = db
         cursor.execute(findQuery, [message.chat.id])
@@ -236,8 +287,8 @@ async def authentication(message, first=False, skip=False):
             lang = auth[3]
             with open(c.strings_file, encoding='utf-8') as f:
                 strings = json.load(f)
-            keyboard = keyboard_ua()
-            if lang == 'ru': keyboard = keyboard_ru()
+            keyboard = keyboard_ua_1()
+            if lang == 'ru': keyboard = keyboard_ru_1()
             await message.answer(strings[lang]['auth_err_1'], reply_markup=keyboard)
     else:
         if not auth:
@@ -289,7 +340,7 @@ async def registration(message: types.Message, state: FSMContext):
         else:
             cursor.executemany(inputQuery, [(message.chat.id, student_id, mail, passwd)])
         conn.commit()
-    await message.answer("Вхід успішно виконаний!", reply_markup=keyboard_ua())
+    await message.answer("Вхід успішно виконаний!", reply_markup=keyboard_ua_1())
     with DatabaseConnection() as db:
         conn, cursor = db
         cursor.execute(selectUserQuery, [message.chat.id])
@@ -498,6 +549,45 @@ async def page_6(message):
     await message.answer(subjects, parse_mode="Markdown")
 
 
+async def page_academic_schedule(message, week_num):
+    auth = await authentication(message)
+    if not auth: return
+    lang = auth[3]
+    gid = auth[4]
+
+    week = '' if week_num == '1' else '2'
+    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/Schedule{week}/{gid}')
+    if not response:
+        await message.answer(req_err_msg)
+        return
+    answer = json.loads(response.text)
+    with open(c.strings_file, encoding='utf-8') as f:
+        strings = json.load(f)
+    if not answer:
+        await message.answer(strings[lang]['not_found'])
+        return
+
+    week_name = 'Тиждень' if lang == 'ua' else 'Неделя'
+    subjects = f"📆 *{week_name} {week_num}*\n\n"
+    days_sub = answer['Monday'], answer['Tuesday'], answer['Wednesday'], answer['Thursday'], answer['Friday']
+    days_name_ua = ('Понеділок', 'Вівторок', 'Середа', 'Четвер', "П'ятниця")
+    days_name_ru = ('Понедельник', 'Вторник', 'Среда', 'Четверг', "Пятница")
+    days_name = days_name_ua if lang == 'ua' else days_name_ru
+    para_num = ('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣')
+    para_name = ('Para1', 'Para2', 'Para3', 'Para4', 'Para5', 'Para6')
+    for i, day in enumerate(days_sub):
+        subjects = f"{subjects}*📌 {days_name[i]}*\n"
+        for j, p_num in enumerate(para_num):
+            para_json = day[para_name[j]]
+            if para_json['Name']:
+                name = para_json['Name'].replace('`', "'")
+                prepod = para_json['Prepod'].replace('`', "'")
+                para_data = f"*{name}* _{para_json['vid']}_\n➖ {para_json['Aud']} _({prepod})_"
+                subjects = f"{subjects}{p_num} {para_data}\n"
+        subjects = f"{subjects}➖➖➖➖➖➖➖➖➖➖➖➖\n"
+    await message.answer(subjects, parse_mode='Markdown')
+
+
 async def page_sport(message):
     auth = await authentication(message)
     if not auth: return
@@ -565,10 +655,10 @@ async def change_lang(message, lang):
         conn.commit()
     if lang == 'ua':
         text = "Обрана українська мова"
-        keyboard = keyboard_ua()
+        keyboard = keyboard_ua_2()
     else:
         text = "Выбран русский язык"
-        keyboard = keyboard_ru()
+        keyboard = keyboard_ru_2()
     await message.answer(text, reply_markup=keyboard)
 
 
@@ -672,6 +762,9 @@ async def callback_inline(callback_query: types.CallbackQuery):
     elif data[0] == "4":
         await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         await page_4(callback_query.message, data[1:])
+    elif data[0] == "5":
+        await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
+        await page_academic_schedule(callback_query.message, data[1:])
 
     elif data[0] == "s":
         await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
