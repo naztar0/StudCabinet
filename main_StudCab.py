@@ -100,7 +100,7 @@ async def handle_text(message: types.Message):
 async def reg_key(message):
     key = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     but_1 = types.KeyboardButton(sign_in_butt)
-    but_2 = types.KeyboardButton(buttons_ua_1[6])
+    but_2 = types.KeyboardButton(buttons_ua_2[2])
     key.add(but_1)
     key.add(but_2)
     await message.answer("Щоб продовжити натисніть на одну з кнопок", reply_markup=key)
