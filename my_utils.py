@@ -10,18 +10,16 @@ async def delete_message(func, utils, **kwargs):
 
 async def send_message(func, utils, **kwargs):
     try:
-        await func(**kwargs)
+        return await func(**kwargs)
     except utils.exceptions.BotBlocked: return
     except utils.exceptions.UserDeactivated: return
     except utils.exceptions.ChatNotFound: return
     except utils.exceptions.BadRequest: return
-    return True
 
 
 def req_post(url):
     try:
-        response = requests.post(url)
+        response = requests.post(url, timeout=20)
     except requests.exceptions.ConnectionError:
         return
     return response
-

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import json
-from asyncio import sleep
+from asyncio import sleep, get_event_loop
 import constants as c
 import my_utils as mu
 from settings import DEBUG
@@ -818,6 +818,7 @@ async def callback_inline(callback_query: types.CallbackQuery):
 
 if __name__ == '__main__':
     if not DEBUG:
-        dp.loop.create_task(record_book.updater())
-        dp.loop.create_task(record_book.update_users())
+        loop = get_event_loop()
+        loop.create_task(record_book.updater())
+        loop.create_task(record_book.update_users())
     executor.start_polling(dp, skip_updates=True)
