@@ -30,6 +30,7 @@ buttons_ua_1 = ["ℹ Загальна інформація", "📕 Заліко�
 buttons_ru_2 = ["💳 Оплаты за обучение", "📄 Семестровый план", "❓Помощь", "🇷🇺 Язык", "⬅  Назад"]
 buttons_ua_2 = ["💳 Оплати за навчання", "📄 Семестровий план", "❓Підтримка", "🇺🇦 Мова", "⬅ Назад"]
 req_err_msg = "😔 Не вдалося виконати запит, спробуйте пізніше"
+greetings_text = "*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3"
 
 
 def keyboard_ru_1():
@@ -92,6 +93,13 @@ def keyboard_ua_2():
     return key
 
 
+def generate_inline_keyboard(n, count, row=3):
+    key = types.InlineKeyboardMarkup(row_width=row)
+    for i in range(1, count + 1):
+        key.insert(types.InlineKeyboardButton(text=str(i), callback_data=f'{n}{i}'))
+    return key
+
+
 @dp.message_handler(commands=['start'])
 async def handle_text(message: types.Message):
     await reg_key(message)
@@ -109,7 +117,7 @@ async def reg_key(message):
 @dp.message_handler(commands=['feedback'])
 async def handle_text(message: types.Message):
     auth = await authentication(message, skip=True)
-    lang = auth[3] if auth else 'ua'
+    lang = auth[mu.ResTypes.LANG] if auth else 'ua'
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     await message.reply(strings[lang]['feedback_start'])
@@ -121,7 +129,7 @@ async def feedback(message: types.Message, state: FSMContext):
     await state.finish()
 
     auth = await authentication(message, skip=True)
-    lang = auth[3] if auth else 'ua'
+    lang = auth[mu.ResTypes.LANG] if auth else 'ua'
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
 
@@ -181,7 +189,7 @@ async def handle_text(message: types.Message):
         auth = await authentication(message, first=True)
         if auth:
             return
-        await message.answer("*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3", parse_mode="Markdown")
+        await message.answer(greetings_text, parse_mode="Markdown")
         await Form.authorization.set()
     elif message.text == buttons_ua_2[2]:
         await message.answer(c.helper_ua, parse_mode="Markdown", disable_web_page_preview=True)
@@ -190,68 +198,15 @@ async def handle_text(message: types.Message):
     elif message.text == buttons_ua_1[0] or message.text == buttons_ru_1[0]:
         await page_1(message)
     elif message.text == buttons_ua_1[1] or message.text == buttons_ru_1[1]:
-        key = types.InlineKeyboardMarkup()
-        a1 = types.InlineKeyboardButton(text="1", callback_data="21")
-        a2 = types.InlineKeyboardButton(text="2", callback_data="22")
-        a3 = types.InlineKeyboardButton(text="3", callback_data="23")
-        a4 = types.InlineKeyboardButton(text="4", callback_data="24")
-        a5 = types.InlineKeyboardButton(text="5", callback_data="25")
-        a6 = types.InlineKeyboardButton(text="6", callback_data="26")
-        a7 = types.InlineKeyboardButton(text="7", callback_data="27")
-        a8 = types.InlineKeyboardButton(text="8", callback_data="28")
-        a9 = types.InlineKeyboardButton(text="9", callback_data="29")
-        a10 = types.InlineKeyboardButton(text="10", callback_data="210")
-        a11 = types.InlineKeyboardButton(text="11", callback_data="211")
-        a12 = types.InlineKeyboardButton(text="12", callback_data="212")
-        key.add(a1, a2, a3, a4, a5, a6)
-        key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Семестр", reply_markup=key)
+        await message.answer("Семестр", reply_markup=generate_inline_keyboard(2, 12))
     elif message.text == buttons_ua_1[2] or message.text == buttons_ru_1[2]:
-        key = types.InlineKeyboardMarkup()
-        a1 = types.InlineKeyboardButton(text="1", callback_data="31")
-        a2 = types.InlineKeyboardButton(text="2", callback_data="32")
-        a3 = types.InlineKeyboardButton(text="3", callback_data="33")
-        a4 = types.InlineKeyboardButton(text="4", callback_data="34")
-        a5 = types.InlineKeyboardButton(text="5", callback_data="35")
-        a6 = types.InlineKeyboardButton(text="6", callback_data="36")
-        a7 = types.InlineKeyboardButton(text="7", callback_data="37")
-        a8 = types.InlineKeyboardButton(text="8", callback_data="38")
-        a9 = types.InlineKeyboardButton(text="9", callback_data="39")
-        a10 = types.InlineKeyboardButton(text="10", callback_data="310")
-        a11 = types.InlineKeyboardButton(text="11", callback_data="311")
-        a12 = types.InlineKeyboardButton(text="12", callback_data="312")
-        key.add(a1, a2, a3, a4, a5, a6)
-        key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Семестр", reply_markup=key)
+        await message.answer("Семестр", reply_markup=generate_inline_keyboard(3, 12))
     elif message.text == buttons_ua_1[6] or message.text == buttons_ru_1[6]:
-        key = types.InlineKeyboardMarkup()
-        a1 = types.InlineKeyboardButton(text="1", callback_data="41")
-        a2 = types.InlineKeyboardButton(text="2", callback_data="42")
-        a3 = types.InlineKeyboardButton(text="3", callback_data="43")
-        a4 = types.InlineKeyboardButton(text="4", callback_data="44")
-        a5 = types.InlineKeyboardButton(text="5", callback_data="45")
-        a6 = types.InlineKeyboardButton(text="6", callback_data="46")
-        a7 = types.InlineKeyboardButton(text="7", callback_data="47")
-        a8 = types.InlineKeyboardButton(text="8", callback_data="48")
-        a9 = types.InlineKeyboardButton(text="9", callback_data="49")
-        a10 = types.InlineKeyboardButton(text="10", callback_data="410")
-        a11 = types.InlineKeyboardButton(text="11", callback_data="411")
-        a12 = types.InlineKeyboardButton(text="12", callback_data="412")
-        key.add(a1, a2, a3, a4, a5, a6)
-        key.add(a7, a8, a9, a10, a11, a12)
-        await message.answer("Семестр", reply_markup=key)
+        await message.answer("Семестр", reply_markup=generate_inline_keyboard(4, 12))
     elif message.text == buttons_ua_1[4]:
-        key = types.InlineKeyboardMarkup()
-        a1 = types.InlineKeyboardButton(text="1", callback_data="51")
-        a2 = types.InlineKeyboardButton(text="2", callback_data="52")
-        key.add(a1, a2)
-        await message.answer("Тиждень", reply_markup=key)
+        await message.answer("Тиждень", reply_markup=generate_inline_keyboard(5, 2))
     elif message.text == buttons_ru_1[4]:
-        key = types.InlineKeyboardMarkup()
-        a1 = types.InlineKeyboardButton(text="1", callback_data="51")
-        a2 = types.InlineKeyboardButton(text="2", callback_data="52")
-        key.add(a1, a2)
-        await message.answer("Неделя", reply_markup=key)
+        await message.answer("Неделя", reply_markup=generate_inline_keyboard(5, 2))
     elif message.text == buttons_ua_1[3] or message.text == buttons_ru_1[3]:
         await page_3(message)
     elif message.text == buttons_ua_1[5] or message.text == buttons_ru_1[5]:
@@ -284,12 +239,11 @@ async def authentication(message, first=False, skip=False):
         return auth
     if first:
         if auth:
-            lang = auth[3]
             with open(c.strings_file, encoding='utf-8') as f:
                 strings = json.load(f)
             keyboard = keyboard_ua_1()
-            if lang == 'ru': keyboard = keyboard_ru_1()
-            await message.answer(strings[lang]['auth_err_1'], reply_markup=keyboard)
+            if auth[mu.ResTypes.LANG] == 'ru': keyboard = keyboard_ru_1()
+            await message.answer(strings[mu.ResTypes.LANG]['auth_err_1'], reply_markup=keyboard)
     else:
         if not auth:
             await message.answer("Помилка аутентифікації, повторіть спробу входу")
@@ -297,30 +251,37 @@ async def authentication(message, first=False, skip=False):
     return auth
 
 
-async def check_credentials(message, response):
-    response_json = json.loads(response.text)
-    if not response_json:
-        await message.answer("*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3", parse_mode="Markdown")
+async def api_request(message=None, path=c.api_cab, **kwargs):
+    args = ''
+    for arg in kwargs:
+        args += f'&{arg.replace("passwd", "pass", 1)}={kwargs[arg]}'
+    args = '?' + args[1:]
+    response = mu.req_post(c.api_url + path + args)
+    if not response:
+        if message:
+            await message.answer(req_err_msg)
+        return
+    return json.loads(response.text)
+
+
+async def check_credentials(message, answer):
+    if not answer:
+        await message.answer(greetings_text, parse_mode="Markdown")
         await Form.authorization.set()
-        return True
+        return
+    return True
 
 
 @dp.message_handler(content_types=['text'], state=Form.authorization)
 async def registration(message: types.Message, state: FSMContext):
-    s = message.text
     await state.finish()
-    try:
-        mail = s.split()[0]
-        passwd = s.split()[1]
-    except IndexError:
+    s = message.text.split()
+    if len(s) != 2:
         await message.answer("Невірний формат")
         return
-    page = "1"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    mail, passwd = s
+    answer = api_request(message, email=mail, passwd=passwd, page=1)
+    if answer is None: return
     if not answer:
         await message.answer("Неправильний email або пароль")
         return
@@ -347,10 +308,9 @@ async def registration(message: types.Message, state: FSMContext):
         cursor.execute(selectUserQuery, [message.chat.id])
         user_id = cursor.fetchone()[0]
     for sem in range(1, 13):
-        response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={sem}')
-        if not response:
+        rec_book = await api_request(message, email=mail, passwd=passwd, page=2, semestr=sem)
+        if rec_book is None:
             continue
-        rec_book = json.loads(response.text)
         if not rec_book:
             break
         for a in rec_book:
@@ -370,210 +330,170 @@ async def registration(message: types.Message, state: FSMContext):
 async def page_1(message):
     auth = await authentication(message)
     if not auth: return
-    mail = auth[0]
-    passwd = auth[1]
-    lang = auth[3]
-    page = "1"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
-    if not response:
-        await message.answer(req_err_msg)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=1)
+    if answer is None: return
+    if not answer:
+        await message.answer(greetings_text, parse_mode="Markdown")
+        await Form.authorization.set()
         return
-    if await check_credentials(message, response): return
-    answer = json.loads(response.text)[0]
+    answer = answer[0]
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
-    main_page = strings[lang]['page_1'].format(**answer).replace("`", "'")
+    main_page = strings[auth[mu.ResTypes.LANG]]['page_1'].format(**answer).replace("`", "'")
     await message.answer(main_page, parse_mode="Markdown")
 
 
 async def page_2(message, sem):
     auth = await authentication(message)
     if not auth: return
-    mail = auth[0]
-    passwd = auth[1]
-    lang = auth[3]
-    page = "2"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=2, semestr=sem)
+    if answer is None: return
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
-        await message.answer(strings[lang]['not_found'])
+        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
         return
     with_mark = len(answer)
-    subjects = ""
+    subjects = ''
     for a in answer:
-        control = strings[lang]['page_2_exam']
-        if a['control'] == "З": control = strings[lang]['page_2_zach']
+        control = strings[auth[mu.ResTypes.LANG]]['page_2_exam']
+        if a['control'] == "З": control = strings[auth[mu.ResTypes.LANG]]['page_2_zach']
         hvost = a['if_hvost']
         if not hvost: hvost = "—"
         ball = "{oc_short}{oc_ects} {oc_bol}".format(**a)
         if ball == " ":
             ball = "—"
             with_mark -= 1
-
-        subjects = strings[lang]['page_2'].format(subjects, a['subject'], ball, control, a['credit'], hvost).replace("`", "'")
+        subjects = strings[auth[mu.ResTypes.LANG]]['page_2'] \
+            .format(subjects, a['subject'], ball, control, a['credit'], hvost).replace("`", "'")
 
     key_histogram = None
     if with_mark > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton(strings[lang]['histogram'], callback_data="histogram2" + sem))
+        key_histogram.add(types.InlineKeyboardButton(strings[auth[mu.ResTypes.LANG]]['histogram'], callback_data="histogram2" + sem))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
 
 async def page_5(message, sem):
     auth = await authentication(message)
     if not auth: return
-    mail = auth[0]
-    passwd = auth[1]
-    student_id = auth[2]
-    lang = auth[3]
-    page = "5"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=5, semestr=sem)
+    if answer is None: return
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
-        await message.answer(strings[lang]['not_found'])
+        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
         return
     all_in_list = len(answer)
     for a in answer:
-        if int(a['studid']) == student_id:
-            rang1 = strings[lang]['page_5'].format(a['n'], all_in_list, a['sbal100'], a['sbal5'])
+        if int(a['studid']) == auth[mu.ResTypes.STUD_ID]:
+            rang1 = strings[auth[mu.ResTypes.LANG]]['page_5'].format(a['n'], all_in_list, a['sbal100'], a['sbal5'])
             num = int(a['n'])
             break
     else:
         await show_all_list(message, sem)
         return
     percent = float("%.2f" % (num * 100 / all_in_list))
-    percent_str = strings[lang]['page_5_rate'].format(percent)
-    stip = strings[lang]['page_5_stp']
+    percent_str = strings[auth[mu.ResTypes.LANG]]['page_5_rate'].format(percent)
+    stip = strings[auth[mu.ResTypes.LANG]]['page_5_stp']
     if percent < 50:
         if percent < 45:
             if percent < 40:
                 stip += "100 %"
-            else: stip += strings[lang]['page_5_probability']['high']
-        else: stip += strings[lang]['page_5_probability']['low']
-    else: stip += strings[lang]['page_5_probability']['zero']
+            else: stip += strings[auth[mu.ResTypes.LANG]]['page_5_probability']['high']
+        else: stip += strings[auth[mu.ResTypes.LANG]]['page_5_probability']['low']
+    else: stip += strings[auth[mu.ResTypes.LANG]]['page_5_probability']['zero']
 
-    ps = strings[lang]['page_5_ps']
+    ps = strings[auth[mu.ResTypes.LANG]]['page_5_ps']
     key_extend = types.InlineKeyboardMarkup()
-    key_extend.add(types.InlineKeyboardButton(strings[lang]['page_5_all_list'], callback_data="all_list" + sem))
+    key_extend.add(types.InlineKeyboardButton(strings[auth[mu.ResTypes.LANG]]['page_5_all_list'], callback_data="all_list" + sem))
     await message.answer(rang1 + percent_str + stip + ps, parse_mode="Markdown", reply_markup=key_extend)
 
 
 async def page_4(message, sem):
     auth = await authentication(message)
     if not auth: return
-    mail = auth[0]
-    passwd = auth[1]
-    lang = auth[3]
-    page = "4"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=4, semestr=sem)
+    if answer is None: return
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
-        await message.answer(strings[lang]['not_found'])
+        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
         return
     subjects = "*Курс {kurs}, семестр {semestr}:*\n\n".format(**answer[0])
     for i, a in enumerate(answer):
-        control = strings[lang]['page_2_exam']
-        if a['control'] == "З": control = strings[lang]['page_2_zach']
-        subjects = strings[lang]['page_4'].format(subjects, i + 1, a['subject'], a['audit'], a['credit'], control).replace("`", "'")
+        control = strings[auth[mu.ResTypes.LANG]]['page_2_exam']
+        if a['control'] == "З": control = strings[auth[mu.ResTypes.LANG]]['page_2_zach']
+        subjects = strings[auth[mu.ResTypes.LANG]]['page_4'] \
+            .format(subjects, i + 1, a['subject'], a['audit'], a['credit'], control).replace("`", "'")
 
     key_histogram = None
     if len(answer) > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton(strings[lang]['histogram'], callback_data="histogram4" + sem))
+        key_histogram.add(types.InlineKeyboardButton(strings[auth[mu.ResTypes.LANG]]['histogram'], callback_data="histogram4" + sem))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
 
 async def page_3(message):
     auth = await authentication(message)
     if not auth: return
-    mail = auth[0]
-    passwd = auth[1]
-    lang = auth[3]
-    page = "3"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=3)
+    if answer is None: return
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
-        await message.answer(strings[lang]['not_found'])
+        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
         return
-    subjects = ""
+    subjects = ''
     for a in answer:
-        subjects = strings[lang]['page_3'].format(subjects, a['subject'], a['prepod'], a['data']).replace("`", "'")
+        subjects = strings[auth[mu.ResTypes.LANG]]['page_3'] \
+            .format(subjects, a['subject'], a['prepod'], a['data']).replace("`", "'")
     await message.answer(subjects, parse_mode="Markdown")
 
 
 async def page_6(message):
     auth = await authentication(message)
     if not auth: return
-    mail = auth[0]
-    passwd = auth[1]
-    lang = auth[3]
-    page = "6"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=6)
+    if answer is None: return
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
-        await message.answer(strings[lang]['not_found'])
+        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
         return
-    subjects = strings[lang]['page_6_header'].format(answer[0]['dog_name'], answer[0]['start_date'], answer[0]['dog_price'])
+    subjects = strings[auth[mu.ResTypes.LANG]]['page_6_header'] \
+        .format(answer[0]['dog_name'], answer[0]['start_date'], answer[0]['dog_price'])
     for a in answer:
-        subjects = strings[lang]['page_6'].format(subjects, a['term_start'], a['paid_date'], a['paid_value'], a['dp_id']).replace("`", "'")
+        subjects = strings[auth[mu.ResTypes.LANG]]['page_6'] \
+            .format(subjects, a['term_start'], a['paid_date'], a['paid_value'], a['dp_id']).replace("`", "'")
     await message.answer(subjects, parse_mode="Markdown")
 
 
 async def page_academic_schedule(message, week_num):
     auth = await authentication(message)
     if not auth: return
-    lang = auth[3]
-    gid = auth[4]
-
     week = '' if week_num == '1' else '2'
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/Schedule{week}/{gid}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, path=f'{c.api_sched}{week}/{auth[mu.ResTypes.GROUP_ID]}')
+    if answer is None: return
     with open(c.strings_file, encoding='utf-8') as f:
+
         strings = json.load(f)
     if not answer:
-        await message.answer(strings[lang]['not_found'])
+        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
         return
 
-    week_name = 'Тиждень' if lang == 'ua' else 'Неделя'
+    week_name = 'Тиждень' if auth[mu.ResTypes.LANG] == 'ua' else 'Неделя'
     subjects = f"📆 *{week_name} {week_num}*\n\n"
     days_sub = answer['Monday'], answer['Tuesday'], answer['Wednesday'], answer['Thursday'], answer['Friday']
     days_name_ua = ('Понеділок', 'Вівторок', 'Середа', 'Четвер', "П'ятниця")
     days_name_ru = ('Понедельник', 'Вторник', 'Среда', 'Четверг', "Пятница")
-    days_name = days_name_ua if lang == 'ua' else days_name_ru
+    days_name = days_name_ua if auth[mu.ResTypes.LANG] == 'ua' else days_name_ru
     para_num = ('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣')
     para_name = ('Para1', 'Para2', 'Para3', 'Para4', 'Para5', 'Para6')
     for i, day in enumerate(days_sub):
@@ -592,22 +512,18 @@ async def page_academic_schedule(message, week_num):
 async def page_sport(message):
     auth = await authentication(message)
     if not auth: return
-    lang = auth[3]
-    response = mu.req_post('https://schedule.kpi.kharkov.ua/json/sport')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, path=c.api_sport)
+    if answer is None: return
 
     with open(c.strings_file, encoding='utf-8') as f:
         strings = json.load(f)
     if not answer:
-        await message.answer(strings[lang]['not_found'])
+        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
         return
     key = types.InlineKeyboardMarkup()
     for a in answer:
         key.add(types.InlineKeyboardButton(a['sport'], callback_data="s{sportid}".format(**a)))
-    await message.answer(strings[lang]['page_sport'], reply_markup=key)
+    await message.answer(strings[auth[mu.ResTypes.LANG]]['page_sport'], reply_markup=key)
 
 
 def days(s_id):
@@ -625,13 +541,11 @@ def days(s_id):
     return key
 
 
-def get_sport_schedule(s_id, day):
-    day_names = ["", "Понеділок", "Вівторок", "Середа", "Четвер", "П`ятниця", "Субота", "Неділя"]
+async def get_sport_schedule(s_id, day):
+    day_names = ['', "Понеділок", "Вівторок", "Середа", "Четвер", "П`ятниця", "Субота", "Неділя"]
     day = day_names[day]
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
-    if not response:
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(path=c.api_sport, sport_id=s_id)
+    if answer is None: return
     text = f"{day}:\n\n"
     for a in answer:
         if a['day'] == day:
@@ -641,10 +555,8 @@ def get_sport_schedule(s_id, day):
 
 async def send_pdf(message):
     auth = await authentication(message)
-    if not auth: return False
-    mail = auth[0]
-    passwd = auth[1]
-    url = f'http://schedule.kpi.kharkov.ua/json/getpdf?email={mail}&pass={passwd}'
+    if not auth: return
+    url = f'{c.api_url}{c.api_doc}?email={auth[mu.ResTypes.MAIL]}&pass={auth[mu.ResTypes.PASS]}'
     await bot.send_document(message.chat.id, url)
 
 
@@ -666,22 +578,14 @@ async def change_lang(message, lang):
 async def show_all_list(message, sem):
     auth = await authentication(message)
     if not auth: return False
-    mail = auth[0]
-    passwd = auth[1]
-    student_id = auth[2]
-    lang = auth[3]
-    page = "5"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
-    text = ""
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=5, semestr=sem)
+    if answer is None: return
+    text = ''
     for a in answer:
         n = a['n']
         fio = a['fio']
         sbal100 = "%.1f" % float(a['sbal100'])
-        if int(a['studid']) == student_id:
+        if int(a['studid']) == auth[mu.ResTypes.STUD_ID]:
             text += f"⭐ *{fio} ➖ {sbal100}*\n"
         else:
             text += f"*{n}.* {fio} ➖ {sbal100}\n"
@@ -689,21 +593,15 @@ async def show_all_list(message, sem):
     if not text:
         with open(c.strings_file, encoding='utf-8') as f:
             strings = json.load(f)
-        text = strings[lang]['not_found']
+        text = strings[auth[mu.ResTypes.LANG]]['not_found']
     await bot.send_message(message.chat.id, text, parse_mode="Markdown")
 
 
 async def send_histogram_of_page_2(message, sem):
     auth = await authentication(message)
     if not auth: return False
-    mail = auth[0]
-    passwd = auth[1]
-    page = "2"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=2, semestr=sem)
+    if answer is None: return
     subject = []
     score = []
     count = 0
@@ -713,11 +611,9 @@ async def send_histogram_of_page_2(message, sem):
         score.append(int(n['oc_bol']))
         subject.append(n['subject'])
         count += 1
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=1')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)[0]
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=1)
+    if answer is None: return
+    answer = answer[0]
     histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer))
     with open("media/img.png", "rb") as f:
         img = f.read()
@@ -727,14 +623,8 @@ async def send_histogram_of_page_2(message, sem):
 async def send_histogram_of_page_4(message, sem):
     auth = await authentication(message)
     if not auth: return False
-    mail = auth[0]
-    passwd = auth[1]
-    page = "4"
-    response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page={page}&semestr={sem}')
-    if not response:
-        await message.answer(req_err_msg)
-        return
-    answer = json.loads(response.text)
+    answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=4, semestr=sem)
+    if answer is None: return
     subject = []
     score = []
     count = 0
@@ -770,17 +660,16 @@ async def callback_inline(callback_query: types.CallbackQuery):
     elif data[0] == "s":
         await mu.delete_message(bot.delete_message, utils, chat_id=callback_query.message.chat.id, message_id=callback_query.message.message_id)
         s_id = data[1:]
-        response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/sport?sport_id={s_id}')
-        if not response:
-            try: await callback_query.answer(req_err_msg, show_alert=True)
-            except utils.exceptions.InvalidQueryID: pass
-            return
-        answer = json.loads(response.text)
+        answer = await api_request(callback_query.message, path=c.api_sport, sport_id=s_id)
+        if answer is None: return
         if not answer:
-            try: await callback_query.answer("Не найдено", show_alert=True)
-            except utils.exceptions.InvalidQueryID: pass
+            auth = await authentication(callback_query.message)
+            if not auth: return
+            with open(c.strings_file, encoding='utf-8') as f:
+                strings = json.load(f)
+            await callback_query.message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
             return
-        schedule = get_sport_schedule(s_id, 1)
+        schedule = await get_sport_schedule(s_id, 1)
         if not schedule:
             try: await callback_query.answer(req_err_msg, show_alert=True)
             except utils.exceptions.InvalidQueryID: pass
@@ -791,7 +680,7 @@ async def callback_inline(callback_query: types.CallbackQuery):
         day = int(data[3])
         s_id = data[4:]
         try:
-            schedule = get_sport_schedule(s_id, day)
+            schedule = await get_sport_schedule(s_id, day)
             if not schedule:
                 try: await callback_query.answer(req_err_msg, show_alert=True)
                 except utils.exceptions.InvalidQueryID: pass
