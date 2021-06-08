@@ -243,7 +243,7 @@ async def authentication(message, first=False, skip=False):
                 strings = json.load(f)
             keyboard = keyboard_ua_1()
             if auth[mu.ResTypes.LANG] == 'ru': keyboard = keyboard_ru_1()
-            await message.answer(strings[mu.ResTypes.LANG]['auth_err_1'], reply_markup=keyboard)
+            await message.answer(strings[auth[mu.ResTypes.LANG]]['auth_err_1'], reply_markup=keyboard)
     else:
         if not auth:
             await message.answer("Помилка аутентифікації, повторіть спробу входу")
@@ -280,7 +280,7 @@ async def registration(message: types.Message, state: FSMContext):
         await message.answer("Невірний формат")
         return
     mail, passwd = s
-    answer = api_request(message, email=mail, passwd=passwd, page=1)
+    answer = await api_request(message, email=mail, passwd=passwd, page=1)
     if answer is None: return
     if not answer:
         await message.answer("Неправильний email або пароль")
