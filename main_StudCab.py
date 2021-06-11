@@ -3,7 +3,6 @@ import json
 from asyncio import sleep, get_event_loop
 import constants as c
 import my_utils as mu
-from settings import DEBUG
 import histogram
 from database_connection import DatabaseConnection
 import record_book
@@ -30,6 +29,7 @@ buttons_ua_1 = ["ℹ Загальна інформація", "📕 Заліко�
 buttons_ru_2 = ["💳 Оплаты за обучение", "📄 Семестровый план", "❓Помощь", "🇷🇺 Язык", "⬅  Назад"]
 buttons_ua_2 = ["💳 Оплати за навчання", "📄 Семестровий план", "❓Підтримка", "🇺🇦 Мова", "⬅ Назад"]
 req_err_msg = "😔 Не вдалося виконати запит, спробуйте пізніше"
+auth_err_msg = "Помилка аутентифікації, повторіть спробу входу"
 greetings_text = "*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3"
 
 
@@ -246,7 +246,7 @@ async def authentication(message, first=False, skip=False):
             await message.answer(strings[auth[mu.ResTypes.LANG]]['auth_err_1'], reply_markup=keyboard)
     else:
         if not auth:
-            await message.answer("Помилка аутентифікації, повторіть спробу входу")
+            await message.answer(auth_err_msg)
             await reg_key(message)
     return auth
 
@@ -262,14 +262,6 @@ async def api_request(message=None, path=c.api_cab, **kwargs):
             await message.answer(req_err_msg)
         return
     return json.loads(response.text)
-
-
-async def check_credentials(message, answer):
-    if not answer:
-        await message.answer(greetings_text, parse_mode="Markdown")
-        await Form.authorization.set()
-        return
-    return True
 
 
 @dp.message_handler(content_types=['text'], state=Form.authorization)
@@ -333,7 +325,8 @@ async def page_1(message):
     answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=1)
     if answer is None: return
     if not answer:
-        await message.answer(greetings_text, parse_mode="Markdown")
+        await message.answer(auth_err_msg)
+        await message.answer(greetings_text, parse_mode="Markdown", reply_markup=types.ReplyKeyboardRemove())
         await Form.authorization.set()
         return
     answer = answer[0]
@@ -706,7 +699,7 @@ async def callback_inline(callback_query: types.CallbackQuery):
 
 
 if __name__ == '__main__':
-    if not DEBUG:
+    if __debug__ is False:  # if -O flag is set
         loop = get_event_loop()
         loop.create_task(record_book.updater())
         loop.create_task(record_book.update_users())
