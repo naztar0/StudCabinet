@@ -3,3 +3,4 @@ fonts/
 constants.py
 nohup.out
 timedelta
+news_posts.json
