@@ -557,6 +557,8 @@ async def calculate_mark(auth, sem):
     if subjects is None: return
     mark100 = mark5 = credits_ = 0
     for subj in subjects:
+        if not subj['oc_bol'] or not subj['credit']:
+            continue
         mark100 += (int(subj['oc_bol']) * float(subj['credit']))
         credits_ += float(subj['credit'])
     mark100 = mark100 * 0.9 / credits_
