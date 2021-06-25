@@ -6,7 +6,8 @@ from database_connection import DatabaseConnection
 from news_parser import parse_news
 from asyncio import sleep
 from time import time
-from aiogram import Bot, utils
+from aiogram import Bot
+from aiogram.utils import exceptions
 
 bot = Bot(c.token)
 
@@ -17,7 +18,7 @@ async def send_update_record_book(user_id, sem, data):
                f"📆 *Семестр:* {sem}\n" \
                f"📚 *Дисципліна:* {data['subject']}\n" \
                f"✅ *Оцінка:* {ball}".replace("`", "'")
-    await mu.send_message(bot.send_message, utils, chat_id=user_id, text=str_send, parse_mode='Markdown')
+    await mu.send_message(bot.send_message, exceptions, chat_id=user_id, text=str_send, parse_mode='Markdown')
 
 
 async def updater_record_book():
@@ -104,6 +105,6 @@ async def updater_news():
                 cursor.execute(selectQuery, [c.faculties[faculty]])
                 results = cursor.fetchall()
             for res in results:
-                await mu.send_message(bot.send_message, utils, chat_id=res[0], text=str_send, parse_mode='Markdown')
+                await mu.send_message(bot.send_message, exceptions, chat_id=res[0], text=str_send, parse_mode='Markdown')
                 await sleep(.05)
         await sleep(3600)  # 60 min

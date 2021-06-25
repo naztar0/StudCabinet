@@ -561,6 +561,8 @@ async def calculate_mark(auth, sem):
             continue
         mark100 += (int(subj['oc_bol']) * float(subj['credit']))
         credits_ += float(subj['credit'])
+    if not mark100 or not credits_:
+        return 0, 0
     mark100 = mark100 * 0.9 / credits_
     if mark100 >= 90:
         mark5 = 5
@@ -801,7 +803,7 @@ async def callback_inline(callback_query: types.CallbackQuery):
 
 
 if __name__ == '__main__':
-    if __debug__ is False:  # if -O flag is set
+    if not c.debug:  # if -O flag is set
         loop = get_event_loop()
         loop.create_task(updaters.updater_record_book())
         loop.create_task(updaters.update_users_record_book())

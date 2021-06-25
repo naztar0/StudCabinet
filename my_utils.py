@@ -35,17 +35,17 @@ class CallbackFuncs:
 async def delete_message(func, exceptions, **kwargs):
     try:
         await func(**kwargs)
-    except exceptions.MessageCantBeDeleted: pass
-    except exceptions.MessageToDeleteNotFound: pass
+    except (exceptions.MessageCantBeDeleted,
+            exceptions.MessageToDeleteNotFound): pass
 
 
 async def send_message(func, exceptions, **kwargs):
     try:
         return await func(**kwargs)
-    except exceptions.BotBlocked: return
-    except exceptions.UserDeactivated: return
-    except exceptions.ChatNotFound: return
-    except exceptions.BadRequest: return
+    except (exceptions.BotBlocked,
+            exceptions.UserDeactivated,
+            exceptions.ChatNotFound,
+            exceptions.BadRequest): return
 
 
 def req_post(url, method='POST'):
@@ -56,8 +56,8 @@ def req_post(url, method='POST'):
             response = requests.get(url, timeout=10)
         else:
             return
-    except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError):
-        return
+    except (requests.exceptions.ReadTimeout,
+            requests.exceptions.ConnectionError): return
     return response
 
 
