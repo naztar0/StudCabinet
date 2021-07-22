@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import json
-from constants import faculties as fa
+from app.misc import faculties as fa, temp_dir
 from bs4 import BeautifulSoup as BS
-from my_utils import req_post
+from app.utils.my_utils import req_post
 
 
 class Post:
@@ -33,10 +33,14 @@ class Posts:
 
 def parse_1():
     req = req_post("http://web.kpi.kharkov.ua/cit/uk/", 'GET')
+    if not req:
+        return
     html = BS(req.content, 'html.parser')
     posts = Posts()
     for element in html.select(".post-row"):
         for item in element.select('article'):
+            if not (item.get("id") and item.find('a')):
+                continue
             post = Post()
             post.id = item.get("id")
             post.title = item.find('a').get("title")
@@ -47,10 +51,14 @@ def parse_1():
 
 def parse_2():
     req = req_post("http://web.kpi.kharkov.ua/if/uk/", 'GET')
+    if not req:
+        return
     html = BS(req.content, 'html.parser')
     posts = Posts()
     for element in html.select(".post-wrap"):
         for item in element.select('.post-box'):
+            if not (item.get("id") and item.find('a')):
+                continue
             post = Post()
             post.id = item.get("id")
             post.title = item.find('a').text
@@ -61,10 +69,14 @@ def parse_2():
 
 def parse_3():
     req = req_post("http://web.kpi.kharkov.ua/sgt/uk/", 'GET')
+    if not req:
+        return
     html = BS(req.content, 'html.parser')
     posts = Posts()
     for element in html.select(".post-wrap"):
         for item in element.select('.post-box'):
+            if not (item.get("id") and item.find('a')):
+                continue
             post = Post()
             post.id = item.get("id")
             post.title = item.find('a').text
@@ -75,9 +87,13 @@ def parse_3():
 
 def parse_4():
     req = req_post("http://web.kpi.kharkov.ua/emmb/", 'GET')
+    if not req:
+        return
     html = BS(req.content, 'html.parser')
     posts = Posts()
     for item in html.select('article'):
+        if not (item.get("id") and item.find('a')):
+            continue
         post = Post()
         post.id = item.get("id")
         post.title = item.find('a').get("title")
@@ -88,12 +104,16 @@ def parse_4():
 
 def parse_5():
     req = req_post("http://web.kpi.kharkov.ua/eee/uk/", 'GET')
+    if not req:
+        return
     html = BS(req.content, 'html.parser')
     posts = Posts()
     for element in html.select('article'):
         post = Post()
         post.id = element.get("id")
         for item in element.select('.entry-title'):
+            if not (element.get("id") and item.find('a')):
+                continue
             post.title = item.text
             post.link = item.find('a').get("href")
             posts.add(post)
@@ -118,11 +138,11 @@ def parse_news(n, update_last=True):
     if not posts:
         return
     if update_last:
-        with open('news_posts.json', 'r') as f:
+        with open(f'{temp_dir}/news_posts.json', 'r') as f:
             data = json.load(f)
         if data[n] == posts[0].id:
             return
         data[n] = posts[0].id
-        with open('news_posts.json', 'w') as f:
+        with open(f'{temp_dir}/news_posts.json', 'w') as f:
             json.dump(data, f)
     return posts

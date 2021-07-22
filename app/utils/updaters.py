@@ -1,23 +1,25 @@
 #!/usr/bin/env python
 import json
-import constants as c
-import my_utils as mu
-from database_connection import DatabaseConnection
-from news_parser import parse_news
+import app.utils.my_utils as mu
+from app.misc import faculties, temp_dir
+from app.config import TG_TOKEN
+from app.utils.database_connection import DatabaseConnection
+from app.utils.news_parser import parse_news
 from asyncio import sleep
 from time import time
-from aiogram import Bot, utils
+from aiogram import Bot
+from aiogram.utils import exceptions
 
-bot = Bot(c.token)
+bot = Bot(TG_TOKEN)
 
 
-async def send_update_record_book(user_id, sem, data):
+async def _send_update_record_book(user_id, sem, data):
     ball = "{oc_short}{oc_ects} {oc_bol}".format(**data)
     str_send = f"❗ *Виставлено оцінку*\n" \
                f"📆 *Семестр:* {sem}\n" \
                f"📚 *Дисципліна:* {data['subject']}\n" \
                f"✅ *Оцінка:* {ball}".replace("`", "'")
-    await mu.send_message(bot.send_message, utils, chat_id=user_id, text=str_send, parse_mode='Markdown')
+    await mu.send_message(bot.send_message, exceptions, chat_id=user_id, text=str_send, parse_mode='Markdown')
 
 
 async def updater_record_book():
@@ -40,7 +42,7 @@ async def updater_record_book():
                 if int(a['subj_id']) == subj_id:
                     mark = a['oc_bol']
                     if mark:
-                        await send_update_record_book(user_id, semester, a)
+                        await _send_update_record_book(user_id, semester, a)
                         await sleep(.05)
                         with DatabaseConnection() as db:
                             conn, cursor = db
@@ -53,12 +55,12 @@ async def updater_record_book():
 async def update_users_record_book():
     delay = 1314000  # 1/2 month
     while True:
-        with open('timedelta', 'r') as f:
+        with open(f'{temp_dir}/timedelta', 'r') as f:
             t = f.read()
         if int(t) + delay > time():
             await sleep(86400)  # 1 day
             continue
-        with open('timedelta', 'w') as f:
+        with open(f'{temp_dir}/timedelta', 'w') as f:
             f.write(str(int(time())))
         selectUsersQuery = "SELECT ID, mail, pass FROM users"
         existsQuery = "SELECT EXISTS (SELECT ID FROM record_book WHERE user_id=(%s) AND subj_id=(%s) AND semester=(%s))"
@@ -93,17 +95,20 @@ async def update_users_record_book():
 async def updater_news():
     while True:
         selectQuery = "SELECT user_id FROM users WHERE faculty=(%s)"
-        for faculty in range(len(c.faculties)):
+        for faculty in range(len(faculties)):
             news = parse_news(faculty)
             if not news:
                 continue
             str_send = f'❗ *Опубліковано новину кафедри*\n' \
-                       f'[{mu.esc_markdown(news[0].title)}]({mu.esc_markdown(news[0].link)})'
+                       f'✔ (http://web.kpi.kharkov.ua/cit/uk/sotsialna-stipendiya-3/) (http://web.kpi.kharkov.ua/cit/uk/sotsialna-stipendiya-3/)[{mu.esc_markdown(news[0].title)}]({mu.esc_markdown(news[0].link)})'
             with DatabaseConnection() as db:
                 conn, cursor = db
-                cursor.execute(selectQuery, [c.faculties[faculty]])
+                cursor.execute(selectQuery, [faculties[faculty]])
                 results = cursor.fetchall()
             for res in results:
-                await mu.send_message(bot.send_message, utils, chat_id=res[0], text=str_send, parse_mode='Markdown')
+                await mu.send_message(bot.send_message, exceptions, chat_id=res[0], text=str_send, parse_mode='Markdown')
                 await sleep(.05)
         await sleep(3600)  # 60 min
+
+
+__all__ = (updater_news, updater_record_book, update_users_record_book)
