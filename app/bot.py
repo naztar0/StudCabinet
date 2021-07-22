@@ -1,23 +1,27 @@
 #!/usr/bin/env python
 import json
-from asyncio import sleep, get_event_loop
-import constants as c
-import my_utils as mu
-import histogram
-from database_connection import DatabaseConnection
-import updaters
-import news_parser
+from asyncio import sleep
+from contextlib import suppress
+from app import config
+from app import misc
+from app.utils import my_utils as mu, histogram, news_parser
+from app.utils.database_connection import DatabaseConnection
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils import exceptions, callback_data
+from aiogram.contrib.middlewares.i18n import I18nMiddleware
 
 
-bot = Bot(c.token)
+bot = Bot(config.TG_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+
+i18n = I18nMiddleware('bot', misc.locales_dir, default='ua')
+dp.middleware.setup(i18n)
+_ = i18n.gettext
 
 
 class Form(StatesGroup): authorization = State()
@@ -27,27 +31,17 @@ class SearchStudent(StatesGroup): user = State()
 class GetNews(StatesGroup): processing = State()
 
 
-sign_in_butt = "👥 Увійти в кабінет"
-buttons_ua_1 = ["ℹ Загальна інформація", "📕 Залікова книжка", "📊 Рейтинг", "⚠ Борги", "📆 Розклад занять", "📆 Розклад спорт. каф.", "🗓 Навчальний план", "➡ Далі"]
-buttons_ru_1 = ["ℹ Общая информация", "📕 Зачётная книжка", "📊 Рейтинг", "⚠ Долги", "📆 Расписание занятий", "📆 Расписание спорт. каф.", "🗓 Учебный план", "➡ Дальше"]
-buttons_ua_2 = ["💳 Оплати за навчання", "📄 Семестровий план", "🔍 Пошук студентів", "📨 Новини кафедри", "❓Підтримка", "🇺🇦 Мова", "⬅ Назад"]
-buttons_ru_2 = ["💳 Оплаты за обучение", "📄 Семестровый план", "🔍 Поиск студентов", "📨 Новости кафедры", "❓Помощь", "🇷🇺 Язык", "⬅  Назад"]
-req_err_msg = "😔 Не вдалося виконати запит, спробуйте пізніше"
-auth_err_msg = "Помилка аутентифікації, повторіть спробу входу"
-greetings_text = "*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3"
-
-
 def reply_keyboard(key_type: int):
     buttons = None
     if key_type == mu.Keyboards.UA_1:
-        buttons = buttons_ua_1
+        buttons = misc.buttons_ua_1
     elif key_type == mu.Keyboards.UA_2:
-        buttons = buttons_ua_2
+        buttons = misc.buttons_ua_2
     elif key_type == mu.Keyboards.RU_1:
-        buttons = buttons_ru_1
+        buttons = misc.buttons_ru_1
     elif key_type == mu.Keyboards.RU_2:
-        buttons = buttons_ru_2
-    key = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
+        buttons = misc.buttons_ru_2
+    key = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, input_field_placeholder="Select a button...")
     for btn in buttons:
         key.insert(btn)
     return key
@@ -83,7 +77,7 @@ async def handle_text(message: types.Message):
 
 async def reg_key(message):
     key = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True, row_width=1)
-    key.add(sign_in_butt, buttons_ua_2[4])
+    key.add(misc.sign_in_butt, misc.buttons_ua_2[4])
     await message.answer("Щоб продовжити натисніть на одну з кнопок", reply_markup=key)
 
 
@@ -91,9 +85,7 @@ async def reg_key(message):
 async def handle_text(message: types.Message):
     auth = await authentication(message, skip=True)
     lang = auth[mu.ResTypes.LANG] if auth else 'ua'
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
-    await message.reply(strings[lang]['feedback_start'])
+    await message.reply(_('feedback_start', locale=lang))
     await Feedback.text.set()
 
 
@@ -102,25 +94,23 @@ async def feedback(message: types.Message, state: FSMContext):
     await state.finish()
     auth = await authentication(message, skip=True)
     lang = auth[mu.ResTypes.LANG] if auth else 'ua'
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if message.text:
-        for exception in ['/exit', sign_in_butt], buttons_ua_1, buttons_ru_1:
+        for exception in ['/exit', misc.sign_in_butt], misc.buttons_ua_1, misc.buttons_ru_1:
             if message.text in exception:
-                await message.reply(strings[lang]['cancel'])
+                await message.reply(_('cancel', locale=lang))
                 return
     name = mu.esc_markdown(message.from_user.full_name)
     username = mu.esc_markdown(message.from_user.username)
     text = f"*Feedback!\n\nUser:* [{name}](tg://user?id={message.from_user.id})\n" \
            f"*UserName:* @{username}\n*ID:* {message.from_user.id}"
-    await bot.send_message(c.admin, text, parse_mode="Markdown")
-    await bot.forward_message(c.admin, message.chat.id, message.message_id)
-    await message.answer(strings[lang]['feedback_finish'])
+    await bot.send_message(config.BOT_ADMIN, text, parse_mode="Markdown")
+    await bot.forward_message(config.BOT_ADMIN, message.chat.id, message.message_id)
+    await message.answer(_('feedback_finish', locale=lang))
 
 
 @dp.message_handler(commands=['send'])
 async def handle_text(message: types.Message):
-    if message.chat.id == c.admin:
+    if message.chat.id == config.BOT_ADMIN:
         await message.answer("Введите сообщение для отправки пользователям (Markdown)\n\nОтмена - [/exit]")
         await SendMessageToUsers.text.set()
 
@@ -158,51 +148,51 @@ async def handle_text(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'])
 async def handle_text(message: types.Message, state: FSMContext):
-    if message.text == sign_in_butt:
+    if message.text == misc.sign_in_butt:
         auth = await authentication(message, first=True)
         if auth:
             return
-        await message.answer(greetings_text, parse_mode="Markdown")
+        await message.answer(misc.greetings_text, parse_mode="Markdown")
         await Form.authorization.set()
-    elif message.text == buttons_ua_2[4]:
-        await message.answer(c.helper_ua, parse_mode="Markdown", disable_web_page_preview=True)
-    elif message.text == buttons_ru_2[4]:
-        await message.answer(c.helper_ru, parse_mode="Markdown", disable_web_page_preview=True)
-    elif message.text == buttons_ua_1[0] or message.text == buttons_ru_1[0]:
+    elif message.text == misc.buttons_ua_2[4]:
+        await message.answer(misc.helper_ua, parse_mode="Markdown", disable_web_page_preview=True)
+    elif message.text == misc.buttons_ru_2[4]:
+        await message.answer(misc.helper_ru, parse_mode="Markdown", disable_web_page_preview=True)
+    elif message.text == misc.buttons_ua_1[0] or message.text == misc.buttons_ru_1[0]:
         await page_1(message)
-    elif message.text == buttons_ua_1[1] or message.text == buttons_ru_1[1]:
+    elif message.text == misc.buttons_ua_1[1] or message.text == misc.buttons_ru_1[1]:
         await message.answer("Семестр", reply_markup=generate_inline_keyboard(mu.CallbackFuncs.PAGE_2, 12))
-    elif message.text == buttons_ua_1[2] or message.text == buttons_ru_1[2]:
+    elif message.text == misc.buttons_ua_1[2] or message.text == misc.buttons_ru_1[2]:
         await message.answer("Семестр", reply_markup=generate_inline_keyboard(mu.CallbackFuncs.PAGE_5, 12))
-    elif message.text == buttons_ua_1[6] or message.text == buttons_ru_1[6]:
+    elif message.text == misc.buttons_ua_1[6] or message.text == misc.buttons_ru_1[6]:
         await message.answer("Семестр", reply_markup=generate_inline_keyboard(mu.CallbackFuncs.PAGE_4, 12))
-    elif message.text == buttons_ua_1[4]:
+    elif message.text == misc.buttons_ua_1[4]:
         await message.answer("Тиждень", reply_markup=generate_inline_keyboard(mu.CallbackFuncs.SCHEDULE, 2))
-    elif message.text == buttons_ru_1[4]:
+    elif message.text == misc.buttons_ru_1[4]:
         await message.answer("Неделя", reply_markup=generate_inline_keyboard(mu.CallbackFuncs.SCHEDULE, 2))
-    elif message.text == buttons_ua_1[3] or message.text == buttons_ru_1[3]:
+    elif message.text == misc.buttons_ua_1[3] or message.text == misc.buttons_ru_1[3]:
         await page_3(message)
-    elif message.text == buttons_ua_1[5] or message.text == buttons_ru_1[5]:
+    elif message.text == misc.buttons_ua_1[5] or message.text == misc.buttons_ru_1[5]:
         await page_sport(message)
-    elif message.text == buttons_ua_2[0] or message.text == buttons_ru_2[0]:
+    elif message.text == misc.buttons_ua_2[0] or message.text == misc.buttons_ru_2[0]:
         await page_6(message)
-    elif message.text == buttons_ua_2[1] or message.text == buttons_ru_2[1]:
+    elif message.text == misc.buttons_ua_2[1] or message.text == misc.buttons_ru_2[1]:
         await send_pdf(message)
-    elif message.text == buttons_ua_2[5]:
+    elif message.text == misc.buttons_ua_2[5]:
         await change_lang(message, 'ru')
-    elif message.text == buttons_ru_2[5]:
+    elif message.text == misc.buttons_ru_2[5]:
         await change_lang(message, 'ua')
-    elif message.text == buttons_ua_1[7]:
-        await message.answer(buttons_ua_1[7], reply_markup=reply_keyboard(mu.Keyboards.UA_2))
-    elif message.text == buttons_ru_1[7]:
-        await message.answer(buttons_ru_1[7], reply_markup=reply_keyboard(mu.Keyboards.RU_2))
-    elif message.text == buttons_ua_2[6]:
-        await message.answer(buttons_ua_2[6], reply_markup=reply_keyboard(mu.Keyboards.UA_1))
-    elif message.text == buttons_ru_2[6]:
-        await message.answer(buttons_ru_2[6], reply_markup=reply_keyboard(mu.Keyboards.RU_1))
-    elif message.text == buttons_ua_2[2] or message.text == buttons_ru_2[2]:
+    elif message.text == misc.buttons_ua_1[7]:
+        await message.answer(misc.buttons_ua_1[7], reply_markup=reply_keyboard(mu.Keyboards.UA_2))
+    elif message.text == misc.buttons_ru_1[7]:
+        await message.answer(misc.buttons_ru_1[7], reply_markup=reply_keyboard(mu.Keyboards.RU_2))
+    elif message.text == misc.buttons_ua_2[6]:
+        await message.answer(misc.buttons_ua_2[6], reply_markup=reply_keyboard(mu.Keyboards.UA_1))
+    elif message.text == misc.buttons_ru_2[6]:
+        await message.answer(misc.buttons_ru_2[6], reply_markup=reply_keyboard(mu.Keyboards.RU_1))
+    elif message.text == misc.buttons_ua_2[2] or message.text == misc.buttons_ru_2[2]:
         await search_students(message)
-    elif message.text == buttons_ua_2[3] or message.text == buttons_ru_2[3]:
+    elif message.text == misc.buttons_ua_2[3] or message.text == misc.buttons_ru_2[3]:
         await GetNews.processing.set()
         try: await get_news(message)
         finally: await state.finish()
@@ -218,28 +208,26 @@ async def authentication(message, first=False, skip=False):
         return auth
     if first:
         if auth:
-            with open(c.strings_file, encoding='utf-8') as f:
-                strings = json.load(f)
             key_type = mu.Keyboards.UA_1
             if auth[mu.ResTypes.LANG] == 'ru':
                 key_type = mu.Keyboards.RU_1
-            await message.answer(strings[auth[mu.ResTypes.LANG]]['auth_err_1'], reply_markup=reply_keyboard(key_type))
+            await message.answer(_('auth_err_1', locale=auth[mu.ResTypes.LANG]), reply_markup=reply_keyboard(key_type))
     else:
         if not auth:
-            await message.answer(auth_err_msg)
+            await message.answer(misc.auth_err_msg)
             await reg_key(message)
     return auth
 
 
-async def api_request(message=None, path=c.api_cab, **kwargs):
+async def api_request(message=None, path=misc.api_cab, **kwargs):
     args = ''
     for arg in kwargs:
         args += f'&{arg.replace("passwd", "pass", 1)}={kwargs[arg]}'
     args = '?' + args[1:]
-    response = mu.req_post(c.api_url + path + args)
+    response = mu.req_post(misc.api_url + path + args)
     if not response:
         if message:
-            await message.answer(req_err_msg)
+            await message.answer(misc.req_err_msg)
         return
     return json.loads(response.text)
 
@@ -308,15 +296,11 @@ async def page_1(message):
     answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=1)
     if answer is None: return
     if not answer:
-        await message.answer(auth_err_msg)
-        await message.answer(greetings_text, parse_mode="Markdown", reply_markup=types.ReplyKeyboardRemove())
+        await message.answer(misc.auth_err_msg)
+        await message.answer(misc.greetings_text, parse_mode="Markdown", reply_markup=types.ReplyKeyboardRemove())
         await Form.authorization.set()
         return
-    answer = answer[0]
-
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
-    main_page = strings[auth[mu.ResTypes.LANG]]['page_1'].format(**answer).replace("`", "'")
+    main_page = _('page_1', locale=auth[mu.ResTypes.LANG]).format(**answer[0]).replace("`", "'")
     await message.answer(main_page, parse_mode="Markdown")
 
 
@@ -325,30 +309,27 @@ async def page_2(message, sem):
     if not auth: return
     answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=2, semestr=sem)
     if answer is None: return
-
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not answer:
-        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
     with_mark = len(answer)
     subjects = ''
     for a in answer:
-        control = strings[auth[mu.ResTypes.LANG]]['page_2_exam']
-        if a['control'] == "З": control = strings[auth[mu.ResTypes.LANG]]['page_2_zach']
+        control = _('page_2_exam', locale=auth[mu.ResTypes.LANG])
+        if a['control'] == "З": control = _('page_2_zach', locale=auth[mu.ResTypes.LANG])
         hvost = a['if_hvost']
         if not hvost: hvost = "—"
         ball = "{oc_short}{oc_ects} {oc_bol}".format(**a)
         if ball == " ":
             ball = "—"
             with_mark -= 1
-        subjects = strings[auth[mu.ResTypes.LANG]]['page_2'] \
+        subjects = _('page_2', locale=auth[mu.ResTypes.LANG]) \
             .format(subjects, a['subject'], ball, control, a['credit'], hvost).replace("`", "'")
 
     key_histogram = None
     if with_mark > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton(strings[auth[mu.ResTypes.LANG]]['histogram'],
+        key_histogram.add(types.InlineKeyboardButton(_('histogram', locale=auth[mu.ResTypes.LANG]),
                                                      callback_data=set_callback(mu.CallbackFuncs.HISTOGRAM_2, sem)))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
@@ -359,34 +340,32 @@ async def page_5(message, sem):
     answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=5, semestr=sem)
     if answer is None: return
 
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not answer:
-        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
     all_in_list = len(answer)
     for a in answer:
         if int(a['studid']) == auth[mu.ResTypes.STUD_ID]:
-            rang1 = strings[auth[mu.ResTypes.LANG]]['page_5'].format(a['n'], all_in_list, a['sbal100'], a['sbal5'])
+            rang1 = _('page_5', locale=auth[mu.ResTypes.LANG]).format(a['n'], all_in_list, a['sbal100'], a['sbal5'])
             num = int(a['n'])
             break
     else:
         await show_all_list(message, sem, contract=True)
         return
-    percent = float("%.2f" % (num * 100 / all_in_list))
-    percent_str = strings[auth[mu.ResTypes.LANG]]['page_5_rate'].format(percent)
-    stip = strings[auth[mu.ResTypes.LANG]]['page_5_stp']
+    percent = float(num * 100 / all_in_list).__round__(2)
+    percent_str = _('page_5_rate', locale=auth[mu.ResTypes.LANG]).format(percent)
+    stip = _('page_5_stp', locale=auth[mu.ResTypes.LANG])
     if percent < 50:
         if percent < 45:
             if percent < 40:
                 stip += "100 %"
-            else: stip += strings[auth[mu.ResTypes.LANG]]['page_5_probability']['high']
-        else: stip += strings[auth[mu.ResTypes.LANG]]['page_5_probability']['low']
-    else: stip += strings[auth[mu.ResTypes.LANG]]['page_5_probability']['zero']
+            else: stip += _('page_5_probability_high', locale=auth[mu.ResTypes.LANG])
+        else: stip += _('page_5_probability_low', locale=auth[mu.ResTypes.LANG])
+    else: stip += _('page_5_probability_zero', locale=auth[mu.ResTypes.LANG])
 
-    ps = strings[auth[mu.ResTypes.LANG]]['page_5_ps']
+    ps = _('page_5_ps', locale=auth[mu.ResTypes.LANG])
     key_extend = types.InlineKeyboardMarkup()
-    key_extend.add(types.InlineKeyboardButton(strings[auth[mu.ResTypes.LANG]]['page_5_all_list'],
+    key_extend.add(types.InlineKeyboardButton(_('page_5_all_list', locale=auth[mu.ResTypes.LANG]),
                                               callback_data=set_callback(mu.CallbackFuncs.RATING_SHOW_ALL, sem)))
     await message.answer(rang1 + percent_str + stip + ps, parse_mode="Markdown", reply_markup=key_extend)
 
@@ -396,23 +375,20 @@ async def page_4(message, sem):
     if not auth: return
     answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=4, semestr=sem)
     if answer is None: return
-
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not answer:
-        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
     subjects = "*Курс {kurs}, семестр {semestr}:*\n\n".format(**answer[0])
     for i, a in enumerate(answer):
-        control = strings[auth[mu.ResTypes.LANG]]['page_2_exam']
-        if a['control'] == "З": control = strings[auth[mu.ResTypes.LANG]]['page_2_zach']
-        subjects = strings[auth[mu.ResTypes.LANG]]['page_4'] \
-            .format(subjects, i + 1, a['subject'], a['audit'], a['credit'], control).replace("`", "'")
+        control = _('page_2_exam', locale=auth[mu.ResTypes.LANG])
+        if a['control'] == "З": control = _('page_2_zach', locale=auth[mu.ResTypes.LANG])
+        subjects = _('page_4', locale=auth[mu.ResTypes.LANG]) \
+            .format(subjects, i + 1, mu.esc_markdown(a['subject']), mu.esc_markdown(a['audit']), mu.esc_markdown(a['credit']), control)
 
     key_histogram = None
     if len(answer) > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton(strings[auth[mu.ResTypes.LANG]]['histogram'],
+        key_histogram.add(types.InlineKeyboardButton(_('histogram', locale=auth[mu.ResTypes.LANG]),
                                                      callback_data=set_callback(mu.CallbackFuncs.HISTOGRAM_4, sem)))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
@@ -422,15 +398,12 @@ async def page_3(message):
     if not auth: return
     answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=3)
     if answer is None: return
-
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not answer:
-        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
     subjects = ''
     for a in answer:
-        subjects = strings[auth[mu.ResTypes.LANG]]['page_3'] \
+        subjects = _('page_3', locale=auth[mu.ResTypes.LANG]) \
             .format(subjects, a['subject'], a['prepod'], a['data']).replace("`", "'")
     await message.answer(subjects, parse_mode="Markdown")
 
@@ -440,16 +413,13 @@ async def page_6(message):
     if not auth: return
     answer = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=6)
     if answer is None: return
-
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not answer:
-        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
-    subjects = strings[auth[mu.ResTypes.LANG]]['page_6_header'] \
+    subjects = _('page_6_header', locale=auth[mu.ResTypes.LANG]) \
         .format(answer[0]['dog_name'], answer[0]['start_date'], answer[0]['dog_price'])
     for a in answer:
-        subjects = strings[auth[mu.ResTypes.LANG]]['page_6'] \
+        subjects = _('page_6', locale=auth[mu.ResTypes.LANG]) \
             .format(subjects, a['term_start'], a['paid_date'], a['paid_value'], a['dp_id']).replace("`", "'")
     await message.answer(subjects, parse_mode="Markdown")
 
@@ -458,13 +428,10 @@ async def page_academic_schedule(message, week_num):
     auth = await authentication(message)
     if not auth: return
     week = '' if week_num == 1 else '2'
-    answer = await api_request(message, path=f'{c.api_sched}{week}/{auth[mu.ResTypes.GROUP_ID]}')
+    answer = await api_request(message, path=f'{misc.api_sched}{week}/{auth[mu.ResTypes.GROUP_ID]}')
     if answer is None: return
-    with open(c.strings_file, encoding='utf-8') as f:
-
-        strings = json.load(f)
     if not answer:
-        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
 
     week_name = 'Тиждень' if auth[mu.ResTypes.LANG] == 'ua' else 'Неделя'
@@ -491,18 +458,15 @@ async def page_academic_schedule(message, week_num):
 async def page_sport(message):
     auth = await authentication(message)
     if not auth: return
-    answer = await api_request(message, path=c.api_sport)
+    answer = await api_request(message, path=misc.api_sport)
     if answer is None: return
-
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not answer:
-        await message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
     key = types.InlineKeyboardMarkup()
     for a in answer:
         key.add(types.InlineKeyboardButton(a['sport'], callback_data=set_callback(mu.CallbackFuncs.SPORT_TYPE, a['sportid'])))
-    await message.answer(strings[auth[mu.ResTypes.LANG]]['page_sport'], reply_markup=key)
+    await message.answer(_('page_sport', locale=auth[mu.ResTypes.LANG]), reply_markup=key)
 
 
 def get_days_keyboard(s_id):
@@ -521,7 +485,7 @@ def get_days_keyboard(s_id):
 async def get_sport_schedule(s_id, day=0):
     day_names = ("Понеділок", "Вівторок", "Середа", "Четвер", "П`ятниця", "Субота", "Неділя")
     day = day_names[day]
-    answer = await api_request(path=c.api_sport, sport_id=s_id)
+    answer = await api_request(path=misc.api_sport, sport_id=s_id)
     if answer is None: return
     text = f"{day}:\n\n"
     for a in answer:
@@ -533,7 +497,7 @@ async def get_sport_schedule(s_id, day=0):
 async def send_pdf(message):
     auth = await authentication(message)
     if not auth: return
-    url = f'{c.api_url}{c.api_doc}?email={auth[mu.ResTypes.MAIL]}&pass={auth[mu.ResTypes.PASS]}'
+    url = f'{misc.api_url}{misc.api_doc}?email={auth[mu.ResTypes.MAIL]}&pass={auth[mu.ResTypes.PASS]}'
     await bot.send_document(message.chat.id, url)
 
 
@@ -583,30 +547,30 @@ async def show_all_list(message, sem, sort=False, contract=False):
         sort = True
         mark = await calculate_mark(auth, sem)
         if not mark:
-            await message.answer(req_err_msg)
+            await message.answer(misc.req_err_msg)
             return
         main_info = await api_request(message, email=auth[mu.ResTypes.MAIL], passwd=auth[mu.ResTypes.PASS], page=1)
         if not main_info: return
         main_info = main_info[0]
-        answer.append({'fio': f"{main_info['fam']} {main_info['imya'][0]}. {main_info['otch'][0]}.",
+        f_name = main_info['imya'][0] if main_info['imya'] else '-'
+        m_name = main_info['otch'][0] if main_info['otch'] else '-'
+        answer.append({'fio': f"{main_info['fam']} {f_name}. {m_name}.",
                        'group': main_info['grupa'], 'sbal5': mark[1], 'sbal100': mark[0], 'studid': main_info['st_cod']})
     if sort:
         answer = sorted(answer, key=lambda student: float(student['sbal100']), reverse=True)
     for n, a in enumerate(answer, 1):
         fio = a['fio']
-        sbal100 = "%.1f" % float(a['sbal100'])
+        sbal100 = float(a['sbal100']).__round__(1)
         if int(a['studid']) == auth[mu.ResTypes.STUD_ID]:
             text += f"⭐ *{fio.lstrip()} ➖ {sbal100}*\n"
         else:
             text += f"*{n}.* {fio.lstrip()} ➖ {sbal100}\n"
     text = text.replace('`', "'")
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not text:
-        text = strings[auth[mu.ResTypes.LANG]]['not_found']
+        text = _('not_found', locale=auth[mu.ResTypes.LANG])
     key = types.InlineKeyboardMarkup()
     if not sort:
-        key.add(types.InlineKeyboardButton(strings[auth[mu.ResTypes.LANG]]['rating_sort'],
+        key.add(types.InlineKeyboardButton(_('rating_sort', locale=auth[mu.ResTypes.LANG]),
                                            callback_data=set_callback(mu.CallbackFuncs.RATING_SHOW_ALL_SORT, sem)))
     await bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=key)
 
@@ -629,7 +593,7 @@ async def send_histogram_of_page_2(message, sem):
     if answer is None: return
     answer = answer[0]
     histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer))
-    with open("media/img.png", "rb") as f:
+    with open("app/media/img.png", "rb") as f:
         img = f.read()
     await bot.send_photo(message.chat.id, img)
 
@@ -647,25 +611,23 @@ async def send_histogram_of_page_4(message, sem):
         subject.append(n['subject'])
         count += 1
     histogram.histogram(count, score, subject, f"Семестр {sem}")
-    with open("media/img.png", "rb") as f:
+    with open("app/media/img.png", "rb") as f:
         img = f.read()
     await bot.send_photo(message.chat.id, img)
 
 
 async def sport_select(callback_query, s_id):
-    answer = await api_request(callback_query.message, path=c.api_sport, sport_id=s_id)
+    answer = await api_request(callback_query.message, path=misc.api_sport, sport_id=s_id)
     if answer is None: return
     if not answer:
         auth = await authentication(callback_query.message)
         if not auth: return
-        with open(c.strings_file, encoding='utf-8') as f:
-            strings = json.load(f)
-        await callback_query.message.answer(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await callback_query.message.answer(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
     schedule = await get_sport_schedule(s_id)
     if not schedule:
-        try: await callback_query.answer(req_err_msg, show_alert=True)
-        except exceptions.InvalidQueryID: pass
+        with suppress(exceptions.InvalidQueryID):
+            await callback_query.answer(misc.req_err_msg, show_alert=True)
         return
     await callback_query.message.answer(schedule, reply_markup=get_days_keyboard(s_id))
 
@@ -673,38 +635,33 @@ async def sport_select(callback_query, s_id):
 async def sport_day(callback_query, data):
     day = data.get('day')
     s_id = data.get('id')
-    try:
+    with suppress(exceptions.MessageNotModified):
         schedule = await get_sport_schedule(s_id, day)
         if not schedule:
-            try: await callback_query.answer(req_err_msg, show_alert=True)
-            except exceptions.InvalidQueryID: pass
+            with suppress(exceptions.InvalidQueryID):
+                await callback_query.answer(misc.req_err_msg, show_alert=True)
             return
         await bot.edit_message_text(schedule, callback_query.from_user.id, callback_query.message.message_id,
                                     callback_query.from_user.id, reply_markup=get_days_keyboard(s_id))
-    except exceptions.MessageNotModified: pass
 
 
 async def search_students(message):
     auth = await authentication(message)
     if not auth: return False
     await SearchStudent.user.set()
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
-    await message.answer(strings[auth[mu.ResTypes.LANG]]['search_student'])
+    await message.answer(_('search_student', locale=auth[mu.ResTypes.LANG]))
 
 
 @dp.message_handler(content_types=types.ContentTypes.ANY, state=SearchStudent)
 async def handle_text(message: types.Message, state: FSMContext):
     await state.finish()
     auth = await authentication(message)
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
     if not auth: return False
     selectByIdQuery = "SELECT mail, pass FROM users WHERE user_id=(%s)"
     selectByFNQuery = "SELECT mail, pass FROM users WHERE f_name=(%s) AND l_name=(%s) GROUP BY stud_id"
     if message.forward_date:
         if not message.forward_from:
-            await message.reply(strings[auth[mu.ResTypes.LANG]]['user_hidden'])
+            await message.reply(_('user_hidden', locale=auth[mu.ResTypes.LANG]))
             return
         user_id = message.forward_from.id
         with DatabaseConnection() as db:
@@ -713,34 +670,34 @@ async def handle_text(message: types.Message, state: FSMContext):
             result = cursor.fetchall()
     else:
         if not message.text:
-            await message.reply(strings[auth[mu.ResTypes.LANG]]['wrong_format'])
+            await message.reply(_('wrong_format', locale=auth[mu.ResTypes.LANG]))
             return
-        if message.text in buttons_ua_1 + buttons_ua_2 + buttons_ru_1 + buttons_ru_2:
-            await message.reply(strings[auth[mu.ResTypes.LANG]]['wrong_format'])
+        if message.text in misc.buttons_ua_1 + misc.buttons_ua_2 + misc.buttons_ru_1 + misc.buttons_ru_2:
+            await message.reply(_('wrong_format', locale=auth[mu.ResTypes.LANG]))
             return
         try:
             message.text.encode('utf-8')
         except UnicodeError:
-            await message.reply(strings[auth[mu.ResTypes.LANG]]['wrong_format'])
+            await message.reply(_('wrong_format', locale=auth[mu.ResTypes.LANG]))
             return
         s = message.text.replace('`', "'").split()
         if len(s) != 2:
-            await message.reply(strings[auth[mu.ResTypes.LANG]]['wrong_format'])
+            await message.reply(_('wrong_format', locale=auth[mu.ResTypes.LANG]))
             return
         with DatabaseConnection() as db:
             conn, cursor = db
             cursor.executemany(selectByFNQuery, [(s[0].capitalize(), s[1].capitalize())])
             result = cursor.fetchall()
     if not result:
-        await message.reply(strings[auth[mu.ResTypes.LANG]]['not_found'])
+        await message.reply(_('not_found', locale=auth[mu.ResTypes.LANG]))
         return
     for res in result:
         answer = await api_request(message, email=res[0], passwd=res[1], page=1)
         if answer is None: continue
         if not answer:
-            await message.reply(strings[auth[mu.ResTypes.LANG]]['not_found'])
+            await message.reply(_('not_found', locale=auth[mu.ResTypes.LANG]))
             continue
-        main_page = strings[auth[mu.ResTypes.LANG]]['page_1'].format(**answer[0]).replace("`", "'")
+        main_page = _('page_1', locale=auth[mu.ResTypes.LANG]).format(**answer[0]).replace("`", "'")
         await message.reply(main_page, parse_mode='Markdown')
         await sleep(.05)
 
@@ -748,12 +705,10 @@ async def handle_text(message: types.Message, state: FSMContext):
 async def get_news(message):
     auth = await authentication(message)
     if not auth: return False
-    with open(c.strings_file, encoding='utf-8') as f:
-        strings = json.load(f)
-    message_id = (await message.answer(strings[auth[mu.ResTypes.LANG]]['loading'])).message_id
+    message_id = (await message.answer(_('loading', locale=auth[mu.ResTypes.LANG]))).message_id
     news = news_parser.parse_news(auth[mu.ResTypes.FACULTY], update_last=False)
     if not news:
-        await bot.edit_message_text(strings[auth[mu.ResTypes.LANG]]['faculty_unsupported'], message.chat.id, message_id)
+        await bot.edit_message_text(_('faculty_unsupported', locale=auth[mu.ResTypes.LANG]), message.chat.id, message_id)
         return
     news_str = ''
     for i, post in enumerate(news.posts, 1):
@@ -802,10 +757,25 @@ async def callback_inline(callback_query: types.CallbackQuery):
         await send_histogram_of_page_4(callback_query.message, data)
 
 
-if __name__ == '__main__':
-    if not c.debug:  # if -O flag is set
-        loop = get_event_loop()
-        loop.create_task(updaters.updater_record_book())
-        loop.create_task(updaters.update_users_record_book())
-        loop.create_task(updaters.updater_news())
+async def on_startup(_):
+    await bot.set_webhook(config.WEBHOOK_URL, certificate=open(config.WEBHOOK_SSL_CERT, 'rb'))
+    print(await bot.get_webhook_info())
+
+
+async def on_shutdown(_):
+    await bot.delete_webhook()
+
+
+def start_pooling():
     executor.start_polling(dp, skip_updates=True)
+
+
+# FIXME: currently still not working
+def start_webhook():
+    import ssl
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context.load_cert_chain(config.WEBHOOK_SSL_CERT, config.WEBHOOK_SSL_PRIV)
+    executor.start_webhook(dispatcher=dp, webhook_path=config.WEBHOOK_PATH,
+                           on_startup=on_startup, on_shutdown=on_shutdown,
+                           host=config.WEBAPP_HOST, port=config.WEBAPP_PORT,
+                           ssl_context=context)

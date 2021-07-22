@@ -1,6 +1,9 @@
-media/
-fonts/
-constants.py
+.env
+.idea/
+__pycache__/
+venv/
+temp/
+test/
 nohup.out
-timedelta
-news_posts.json
+/app/media/img.png
+*.mo

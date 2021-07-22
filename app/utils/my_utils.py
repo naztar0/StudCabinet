@@ -1,4 +1,5 @@
 import requests
+from contextlib import suppress
 
 
 class ResTypes:
@@ -33,19 +34,17 @@ class CallbackFuncs:
 
 
 async def delete_message(func, exceptions, **kwargs):
-    try:
+    with suppress(exceptions.MessageCantBeDeleted,
+                  exceptions.MessageToDeleteNotFound):
         await func(**kwargs)
-    except (exceptions.MessageCantBeDeleted,
-            exceptions.MessageToDeleteNotFound): pass
 
 
 async def send_message(func, exceptions, **kwargs):
-    try:
+    with suppress(exceptions.BotBlocked,
+                  exceptions.UserDeactivated,
+                  exceptions.ChatNotFound,
+                  exceptions.BadRequest):
         return await func(**kwargs)
-    except (exceptions.BotBlocked,
-            exceptions.UserDeactivated,
-            exceptions.ChatNotFound,
-            exceptions.BadRequest): return
 
 
 def req_post(url, method='POST'):

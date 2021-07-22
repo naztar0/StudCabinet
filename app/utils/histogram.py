@@ -10,11 +10,11 @@ def histogram(line_count, percent, name_text, full_name=None):
     factor = 100 // max(percent)
     line_width = width // line_count // 2  # column width
 
-    im = Image.open("media/bg3.jpg")  # open background image
+    im = Image.open("app/media/bg3.jpg")  # open background image
     draw = ImageDraw.Draw(im)   # draw method initialization
-    fnt = ImageFont.truetype('fonts/Rubik-Bold.ttf', int(line_width / 1.5))    # font for integers
-    fnt_txt = ImageFont.truetype('fonts/Rubik-Bold.ttf', int(line_width / 3))  # font for left-side text
-    fnt_fio = ImageFont.truetype('fonts/Rubik-Regular.ttf', 25)                # font for full name
+    fnt = ImageFont.truetype('app/fonts/Rubik-Bold.ttf', int(line_width / 1.5))    # font for integers
+    fnt_txt = ImageFont.truetype('app/fonts/Rubik-Bold.ttf', int(line_width / 3))  # font for left-side text
+    fnt_fio = ImageFont.truetype('app/fonts/Rubik-Regular.ttf', 25)                # font for full name
 
     if full_name:
         draw.multiline_text((5, 5), text=full_name, fill=(150, 150, 150), font=fnt_fio)  # draw full name
@@ -56,4 +56,4 @@ def histogram(line_count, percent, name_text, full_name=None):
                  (int(x - line_width), int(height - len(name_text[i - 1]) * 25.3)),  vert_text)  # pasting rotated text
         #                                           ^ subtracting text length to get a start of pasted pattern
 
-    im.save("media/img.png")
+    im.save("app/media/img.png")

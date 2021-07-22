@@ -1,10 +1,10 @@
 import mysql.connector
-import constants as c
+from ..config import *
 
 
 class DatabaseConnection:
     def __enter__(self):
-        self.conn = mysql.connector.connect(host=c.host, user=c.user, passwd=c.password, database=c.db)
+        self.conn = mysql.connector.connect(host=MYSQL_HOST, user=MYSQL_USER, passwd=MYSQL_PASSWORD, database=MYSQL_DB)
         self.cursor = self.conn.cursor(buffered=True)
         return self.conn, self.cursor
 
