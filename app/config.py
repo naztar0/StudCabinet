@@ -10,13 +10,11 @@ TG_TOKEN = env.str('TG_TOKEN')
 WEBAPP_HOST = env.str('WEBAPP_HOST', default='0.0.0.0')
 WEBAPP_PORT = env.int('WEBAPP_PORT', default=8080)
 
-SECRET_KEY = "54ijzz8"
+SECRET_KEY = secrets.token_urlsafe(8)
 WEBHOOK_DOMAIN = env.str('WEBHOOK_DOMAIN', default='example.com')
 WEBHOOK_BASE_PATH = env.str('WEBHOOK_BASE_PATH', default="/webhook")
 WEBHOOK_PATH = f'{WEBHOOK_BASE_PATH}/{SECRET_KEY}'
 WEBHOOK_URL = f'https://{WEBHOOK_DOMAIN}{WEBHOOK_PATH}'
-WEBHOOK_SSL_CERT = './webhook_cert.pem'
-WEBHOOK_SSL_PRIV = './webhook_pkey.key'
 
 MYSQL_HOST = env.str('MYSQL_HOST', default='localhost')
 MYSQL_PORT = env.int('MYSQL_PORT', default=3306)

@@ -8,7 +8,6 @@ from app.utils.news_parser import parse_news
 from asyncio import sleep
 from time import time
 from aiogram import Bot
-from aiogram.utils import exceptions
 
 bot = Bot(TG_TOKEN)
 
@@ -19,7 +18,7 @@ async def _send_update_record_book(user_id, sem, data):
                f"📆 *Семестр:* {sem}\n" \
                f"📚 *Дисципліна:* {data['subject']}\n" \
                f"✅ *Оцінка:* {ball}".replace("`", "'")
-    await mu.send_message(bot.send_message, exceptions, chat_id=user_id, text=str_send, parse_mode='Markdown')
+    await mu.send_message(bot.send_message, chat_id=user_id, text=str_send, parse_mode='Markdown')
 
 
 async def updater_record_book():
@@ -100,13 +99,13 @@ async def updater_news():
             if not news:
                 continue
             str_send = f'❗ *Опубліковано новину кафедри*\n' \
-                       f'✔ (http://web.kpi.kharkov.ua/cit/uk/sotsialna-stipendiya-3/) (http://web.kpi.kharkov.ua/cit/uk/sotsialna-stipendiya-3/)[{mu.esc_markdown(news[0].title)}]({mu.esc_markdown(news[0].link)})'
+                       f'✔ [{mu.esc_markdown(news[0].title)}]({mu.esc_markdown(news[0].link)})'
             with DatabaseConnection() as db:
                 conn, cursor = db
                 cursor.execute(selectQuery, [faculties[faculty]])
                 results = cursor.fetchall()
             for res in results:
-                await mu.send_message(bot.send_message, exceptions, chat_id=res[0], text=str_send, parse_mode='Markdown')
+                await mu.send_message(bot.send_message, chat_id=res[0], text=str_send, parse_mode='Markdown')
                 await sleep(.05)
         await sleep(3600)  # 60 min
 
