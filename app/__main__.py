@@ -22,10 +22,10 @@ def posix_main():
     if os.fork() == 0:
         bot.start_webhook()
         exit()
-    # if os.fork() == 0:
-    #     loop = get_event_loop()
-    #     loop.run_until_complete(gather(*(x() for x in updaters.__all__)))
-    #     exit()
+    if os.fork() == 0:
+        loop = get_event_loop()
+        loop.run_until_complete(gather(*(x() for x in updaters.__all__)))
+        exit()
 
 
 if __name__ == '__main__':
