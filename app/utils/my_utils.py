@@ -1,19 +1,11 @@
 import json
 import requests
 from contextlib import suppress
-from aiogram import Bot, Dispatcher, types
+from aiogram import types
 from aiogram.utils import exceptions, callback_data
-from aiogram.contrib.middlewares.i18n import I18nMiddleware
-from app import misc, config
+from app import misc
+from app.misc import i18n, __
 from app.utils.database_connection import DatabaseConnection
-
-
-bot = Bot(config.TG_TOKEN)
-dp = Dispatcher(bot)
-
-i18n = I18nMiddleware('bot', misc.locales_dir, default='ua')
-dp.middleware.setup(i18n)
-__ = i18n.gettext
 
 
 class Student:
@@ -23,12 +15,15 @@ class Student:
         self.mail = args[0]
         self.password = args[1]
         self.id = args[2]
-        self.lang = args[3]
+        self.lang = args[3] or i18n.default
         self.group_id = args[4]
         self.faculty = args[5]
 
     def __bool__(self):
-        return bool(self.id)
+        return all((self.mail, self.password, self.id, self.lang, self.group_id, self.faculty))
+
+    def text(self, name):
+        return __(name, locale=self.lang)
 
 
 class Keyboards:
@@ -80,9 +75,16 @@ def req_post(url, method='POST'):
     return response
 
 
-def esc_markdown(s):
-    if not s: return ''
-    return s.replace('_', '\\_').replace('*', '\\*').replace('`', '\\`').replace('[', '\\[')
+def esc_md(s):
+    if isinstance(s, str):
+        if not s: return ''
+        return s.replace('_', '\\_').replace('*', '\\*').replace('`', "'").replace('[', '\\[')
+    if isinstance(s, dict):
+        return {key: esc_md(x) for key, x in s.items()}
+    if isinstance(s, list):
+        return list(map(lambda x: esc_md(x), s))
+    if isinstance(s, (int, float, bool)):
+        return str(s)
 
 
 def reply_keyboard(key_type: int):
@@ -157,7 +159,7 @@ async def authentication(message, first=False, skip=False):
             key_type = Keyboards.UA_1
             if student.lang == 'ru':
                 key_type = Keyboards.RU_1
-            await message.answer(__('auth_err_1', locale=student.lang), reply_markup=reply_keyboard(key_type))
+            await message.answer(student.text('auth_err_1'), reply_markup=reply_keyboard(key_type))
     else:
         if not student:
             await message.answer(misc.auth_err_msg)
@@ -166,18 +168,18 @@ async def authentication(message, first=False, skip=False):
 
 
 def auth_student(function):
-    async def decorator(message, **kwargs):
+    async def decorator(message, *args, **kwargs):
         kwargs['student'] = await authentication(message)
         if function.__name__ == 'decorator':
             expected = kwargs
         else:
             expected = {key: kwargs[key] for key in function.__code__.co_varnames if kwargs.get(key)}
-        return await function(message, **expected)
+        return await function(message, *args, **expected)
     return decorator
 
 
 def load_page(**kwargs):
-    def pre_decorator(function):
+    def wrapper(function):
         async def decorator(message, **kwargs_):
             api_kwargs = {}
             student: Student = kwargs_.get('student')
@@ -190,14 +192,14 @@ def load_page(**kwargs):
             data = await api_request(message, **api_kwargs, **kwargs)
             if not data and not kwargs.get('allow_invalid'):
                 if student:
-                    await message.answer(__('not_found', locale=student.lang))
+                    await message.answer(student.text('not_found'))
                 return
             kwargs_['api_data'] = data
             expected = {key: kwargs_[key] for key in function.__code__.co_varnames if kwargs_.get(key)}
             return await function(message, **expected)
         return decorator
-    return pre_decorator
+    return wrapper
 
 
-__all__ = ('Keyboards', 'CallbackFuncs', 'delete_message', 'send_message', 'req_post', 'esc_markdown', 'reply_keyboard', 'set_callback', 'get_callback',
+__all__ = ('Keyboards', 'CallbackFuncs', 'delete_message', 'send_message', 'req_post', 'esc_md', 'reply_keyboard', 'set_callback', 'get_callback',
            'generate_inline_keyboard', 'api_request', 'authentication', 'reg_key', 'Student', 'auth_student', 'load_page')

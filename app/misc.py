@@ -1,8 +1,23 @@
 from pathlib import Path
+from aiogram import Bot, Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.contrib.middlewares.i18n import I18nMiddleware
+from app import config
+
 
 app_dir: Path = Path(__file__).parent.parent
 locales_dir = app_dir / "locales"
 temp_dir = app_dir / "temp"
+
+
+bot = Bot(config.TG_TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
+
+i18n = I18nMiddleware('bot', locales_dir, default='ua')
+dp.middleware.setup(i18n)
+__ = i18n.gettext
+
 
 api_url = "https://schedule.kpi.kharkov.ua/json/"
 api_cab = "kabinet"
@@ -20,6 +35,34 @@ req_err_msg = "😔 Не вдалося виконати запит, спроб�
 auth_err_msg = "Помилка аутентифікації, повторіть спробу входу"
 greetings_text = "*Введіть email і пароль від особистого кабінету*\n\nНаприклад:\ndemo@gmail.com d2v8F3"
 faculties = ('КІТ', 'КН', 'СГТ', 'БЕМ', 'Е')
+para_num = ('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣')
+para_name = ('Para1', 'Para2', 'Para3', 'Para4', 'Para5', 'Para6')
+day_names_api_match = ("Понеділок", "Вівторок", "Середа", "Четвер", "П`ятниця", "Субота", "Неділя")
+
+_day_names_ua = ("Понеділок", "Вівторок", "Середа", "Четвер", "П\'ятниця", "Субота", "Неділя")
+_day_names_ru = ("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье")
+_days_short_ua = ('Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд')
+_days_short_ru = ('Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс')
+_week_name_ua = 'Тиждень'
+_week_name_ru = 'Неделя'
+_sem_name_ua = 'Семестр'
+_sem_name_ru = 'Семестр'
+day_names = {
+    'ua': _day_names_ua,
+    'ru': _day_names_ru
+}
+day_short_names = {
+    'ua': _days_short_ua,
+    'ru': _days_short_ru
+}
+week_name = {
+    'ua': _week_name_ua,
+    'ru': _week_name_ru
+}
+sem_name = {
+    'ua': _sem_name_ua,
+    'ru': _sem_name_ru
+}
 
 helper_ua = "*Для студентів університету розроблені персональні електронні* [кабінети](https://studcabinet.kpi.kharkov.ua) *та* [Telegram бот](https://t.me/StudCabinet_Bot)*, " \
             "які є новим форматом залікових книжок.*\n\n" \

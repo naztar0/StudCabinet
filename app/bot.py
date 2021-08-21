@@ -2,25 +2,15 @@
 from asyncio import sleep
 from contextlib import suppress
 from app import config, misc
+from app.misc import bot, dp
 from app.utils.my_utils import *
 from app.utils import histogram, news_parser
 from app.utils.database_connection import DatabaseConnection
 
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import executor, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils import exceptions
-from aiogram.contrib.middlewares.i18n import I18nMiddleware
-
-
-bot = Bot(config.TG_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
-
-i18n = I18nMiddleware('bot', misc.locales_dir, default='ua')
-dp.middleware.setup(i18n)
-__ = i18n.gettext
 
 
 class Form(StatesGroup): authorization = State()
@@ -38,7 +28,7 @@ async def handle_text(message: types.Message):
 @dp.message_handler(commands=['feedback'])
 async def handle_text(message: types.Message):
     student = await authentication(message, skip=True)
-    await message.reply(__('feedback_start', locale=student.lang))
+    await message.reply(student.text('feedback_start'))
     await Feedback.text.set()
 
 
@@ -49,15 +39,15 @@ async def feedback(message: types.Message, state: FSMContext):
     if message.text:
         for exception in ['/exit', misc.sign_in_butt], misc.buttons_ua_1, misc.buttons_ru_1:
             if message.text in exception:
-                await message.reply(__('cancel', locale=student.lang))
+                await message.reply(student.text('cancel'))
                 return
-    name = esc_markdown(message.from_user.full_name)
-    username = esc_markdown(message.from_user.username)
+    name = esc_md(message.from_user.full_name)
+    username = esc_md(message.from_user.username)
     text = f"*Feedback!\n\nUser:* [{name}](tg://user?id={message.from_user.id})\n" \
            f"*UserName:* @{username}\n*ID:* {message.from_user.id}"
     await bot.send_message(config.BOT_ADMIN, text, parse_mode="Markdown")
     await bot.forward_message(config.BOT_ADMIN, message.chat.id, message.message_id)
-    await message.answer(__('feedback_finish', locale=student.lang))
+    await message.answer(student.text('feedback_finish'))
 
 
 @dp.message_handler(commands=['send'])
@@ -67,6 +57,7 @@ async def handle_text(message: types.Message):
         await SendMessageToUsers.text.set()
 
 
+# TODO make this operations independence
 @dp.message_handler(content_types=['text'], state=SendMessageToUsers.text)
 async def handle_text(message: types.Message, state: FSMContext):
     await state.finish()
@@ -112,23 +103,21 @@ async def handle_text(message: types.Message, state: FSMContext):
         await message.answer(misc.helper_ru, parse_mode="Markdown", disable_web_page_preview=True)
     elif message.text == misc.buttons_ua_1[0] or message.text == misc.buttons_ru_1[0]:
         await page_1(message)
-    elif message.text == misc.buttons_ua_1[1] or message.text == misc.buttons_ru_1[1]:
-        await message.answer("Семестр", reply_markup=generate_inline_keyboard(CallbackFuncs.PAGE_2, 12))
-    elif message.text == misc.buttons_ua_1[2] or message.text == misc.buttons_ru_1[2]:
-        await message.answer("Семестр", reply_markup=generate_inline_keyboard(CallbackFuncs.PAGE_5, 12))
-    elif message.text == misc.buttons_ua_1[6] or message.text == misc.buttons_ru_1[6]:
-        await message.answer("Семестр", reply_markup=generate_inline_keyboard(CallbackFuncs.PAGE_4, 12))
-    elif message.text == misc.buttons_ua_1[4]:
-        await message.answer("Тиждень", reply_markup=generate_inline_keyboard(CallbackFuncs.SCHEDULE, 2))
-    elif message.text == misc.buttons_ru_1[4]:
-        await message.answer("Неделя", reply_markup=generate_inline_keyboard(CallbackFuncs.SCHEDULE, 2))
-    elif message.text == misc.buttons_ua_1[3] or message.text == misc.buttons_ru_1[3]:
+    elif message.text in (misc.buttons_ua_1[1], misc.buttons_ru_1[1]):
+        await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_2, 12))
+    elif message.text in (misc.buttons_ua_1[2], misc.buttons_ru_1[2]):
+        await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_5, 12))
+    elif message.text in (misc.buttons_ua_1[6], misc.buttons_ru_1[6]):
+        await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_4, 12))
+    elif message.text in (misc.buttons_ua_1[4], misc.buttons_ru_1[4]):
+        await choose_from_inline(message, misc.week_name, generate_inline_keyboard(CallbackFuncs.SCHEDULE, 2))
+    elif message.text in (misc.buttons_ua_1[3], misc.buttons_ru_1[3]):
         await page_3(message)
-    elif message.text == misc.buttons_ua_1[5] or message.text == misc.buttons_ru_1[5]:
+    elif message.text in (misc.buttons_ua_1[5], misc.buttons_ru_1[5]):
         await page_sport(message)
-    elif message.text == misc.buttons_ua_2[0] or message.text == misc.buttons_ru_2[0]:
+    elif message.text in (misc.buttons_ua_2[0], misc.buttons_ru_2[0]):
         await page_6(message)
-    elif message.text == misc.buttons_ua_2[1] or message.text == misc.buttons_ru_2[1]:
+    elif message.text in (misc.buttons_ua_2[1], misc.buttons_ru_2[1]):
         await send_pdf(message)
     elif message.text == misc.buttons_ua_2[5]:
         await change_lang(message, 'ru')
@@ -142,9 +131,9 @@ async def handle_text(message: types.Message, state: FSMContext):
         await message.answer(misc.buttons_ua_2[6], reply_markup=reply_keyboard(Keyboards.UA_1))
     elif message.text == misc.buttons_ru_2[6]:
         await message.answer(misc.buttons_ru_2[6], reply_markup=reply_keyboard(Keyboards.RU_1))
-    elif message.text == misc.buttons_ua_2[2] or message.text == misc.buttons_ru_2[2]:
+    elif message.text in (misc.buttons_ua_2[2], misc.buttons_ru_2[2]):
         await search_students(message)
-    elif message.text == misc.buttons_ua_2[3] or message.text == misc.buttons_ru_2[3]:
+    elif message.text in (misc.buttons_ua_2[3], misc.buttons_ru_2[3]):
         await GetNews.processing.set()
         try: await get_news(message)
         finally: await state.finish()
@@ -209,6 +198,11 @@ async def registration(message: types.Message, state: FSMContext):
 
 
 @auth_student
+async def choose_from_inline(message, names, reply_markup, student: Student):
+    await message.answer(names[student.lang], reply_markup=reply_markup)
+
+
+@auth_student
 @load_page(allow_invalid=True, page=1)
 async def page_1(message, student: Student, api_data):
     if not api_data:
@@ -216,7 +210,7 @@ async def page_1(message, student: Student, api_data):
         await message.answer(misc.greetings_text, parse_mode="Markdown", reply_markup=types.ReplyKeyboardRemove())
         await Form.authorization.set()
         return
-    main_page = __('page_1', locale=student.lang).format(**api_data[0]).replace("`", "'")
+    main_page = student.text('page_1').format(**esc_md(api_data[0]))
     await message.answer(main_page, parse_mode="Markdown")
 
 
@@ -226,21 +220,20 @@ async def page_2(message, sem, student: Student, api_data: list):
     with_mark = len(api_data)
     subjects = ''
     for a in api_data:
-        control = __('page_2_exam', locale=student.lang)
-        if a['control'] == "З": control = __('page_2_zach', locale=student.lang)
+        control = student.text('page_2_exam')
+        if a['control'] == "З": control = student.text('page_2_zach')
         hvost = a['if_hvost']
         if not hvost: hvost = "—"
         ball = "{oc_short}{oc_ects} {oc_bol}".format(**a)
         if ball == " ":
             ball = "—"
             with_mark -= 1
-        subjects = __('page_2', locale=student.lang) \
-            .format(subjects, a['subject'], ball, control, a['credit'], hvost).replace("`", "'")
+        subjects += student.text('page_2').format(*esc_md([a['subject'], ball, control, a['credit'], hvost]))
 
     key_histogram = None
     if with_mark > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton(__('histogram', locale=student.lang),
+        key_histogram.add(types.InlineKeyboardButton(student.text('histogram'),
                                                      callback_data=set_callback(CallbackFuncs.HISTOGRAM_2, sem)))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
@@ -251,26 +244,26 @@ async def page_5(message, sem, student: Student, api_data: list):
     all_in_list = len(api_data)
     for a in api_data:
         if int(a['studid']) == student.id:
-            rang1 = __('page_5', locale=student.lang).format(a['n'], all_in_list, a['sbal100'], a['sbal5'])
+            rang1 = student.text('page_5').format(a['n'], all_in_list, a['sbal100'], a['sbal5'])
             num = int(a['n'])
             break
     else:
         await show_all_list(message, sem=sem, contract=True)
         return
     percent = float(num * 100 / all_in_list).__round__(2)
-    percent_str = __('page_5_rate', locale=student.lang).format(percent)
-    stip = __('page_5_stp', locale=student.lang)
+    percent_str = student.text('page_5_rate').format(percent)
+    stip = student.text('page_5_stp')
     if percent < 50:
         if percent < 45:
             if percent < 40:
                 stip += "100 %"
-            else: stip += __('page_5_probability_high', locale=student.lang)
-        else: stip += __('page_5_probability_low', locale=student.lang)
-    else: stip += __('page_5_probability_zero', locale=student.lang)
+            else: stip += student.text('page_5_probability_high')
+        else: stip += student.text('page_5_probability_low')
+    else: stip += student.text('page_5_probability_zero')
 
-    ps = __('page_5_ps', locale=student.lang)
+    ps = student.text('page_5_ps')
     key_extend = types.InlineKeyboardMarkup()
-    key_extend.add(types.InlineKeyboardButton(__('page_5_all_list', locale=student.lang),
+    key_extend.add(types.InlineKeyboardButton(student.text('page_5_all_list'),
                                               callback_data=set_callback(CallbackFuncs.RATING_SHOW_ALL, sem)))
     await message.answer(rang1 + percent_str + stip + ps, parse_mode="Markdown", reply_markup=key_extend)
 
@@ -280,15 +273,14 @@ async def page_5(message, sem, student: Student, api_data: list):
 async def page_4(message, sem, student: Student, api_data: list):
     subjects = "*Курс {kurs}, семестр {semestr}:*\n\n".format(**api_data[0])
     for i, a in enumerate(api_data):
-        control = __('page_2_exam', locale=student.lang)
-        if a['control'] == "З": control = __('page_2_zach', locale=student.lang)
-        subjects = __('page_4', locale=student.lang) \
-            .format(subjects, i + 1, esc_markdown(a['subject']), esc_markdown(a['audit']), esc_markdown(a['credit']), control)
+        control = student.text('page_2_exam')
+        if a['control'] == "З": control = student.text('page_2_zach')
+        subjects += student.text('page_4').format(i + 1, *esc_md([a['subject'], a['audit'], a['credit']]), control)
 
     key_histogram = None
     if len(api_data) > 4:
         key_histogram = types.InlineKeyboardMarkup()
-        key_histogram.add(types.InlineKeyboardButton(__('histogram', locale=student.lang),
+        key_histogram.add(types.InlineKeyboardButton(student.text('histogram'),
                                                      callback_data=set_callback(CallbackFuncs.HISTOGRAM_4, sem)))
     await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
 
@@ -298,19 +290,16 @@ async def page_4(message, sem, student: Student, api_data: list):
 async def page_3(message, student: Student, api_data: list):
     subjects = ''
     for a in api_data:
-        subjects = __('page_3', locale=student.lang) \
-            .format(subjects, a['subject'], a['prepod'], a['data']).replace("`", "'")
+        subjects += student.text('page_3').format(*esc_md([a['subject'], a['prepod'], a['data']]))
     await message.answer(subjects, parse_mode="Markdown")
 
 
 @auth_student
 @load_page(page=6)
 async def page_6(message, student: Student, api_data: list):
-    subjects = __('page_6_header', locale=student.lang) \
-        .format(api_data[0]['dog_name'], api_data[0]['start_date'], api_data[0]['dog_price'])
+    subjects = student.text('page_6_header').format(api_data[0]['dog_name'], api_data[0]['start_date'], api_data[0]['dog_price'])
     for a in api_data:
-        subjects = __('page_6', locale=student.lang) \
-            .format(subjects, a['term_start'], a['paid_date'], a['paid_value'], a['dp_id']).replace("`", "'")
+        subjects += student.text('page_6').format(*esc_md([a['term_start'], a['paid_date'], a['paid_value'], a['dp_id']]))
     await message.answer(subjects, parse_mode="Markdown")
 
 
@@ -320,32 +309,22 @@ async def page_academic_schedule(message, week_num, student: Student):
     api_data = await api_request(message, path=f'{misc.api_sched}{week}/{student.group_id}')
     if api_data is None: return
     if not api_data:
-        await message.answer(__('not_found', locale=student.lang))
+        await message.answer(student.text('not_found'))
         return
-    # TODO move to utils
-    days_name_ua = ('Понеділок', 'Вівторок', 'Середа', 'Четвер', "П'ятниця")
-    days_name_ru = ('Понедельник', 'Вторник', 'Среда', 'Четверг', "Пятница")
-    para_num = ('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣')
-    para_name = ('Para1', 'Para2', 'Para3', 'Para4', 'Para5', 'Para6')
-    week_name = days_name = None
-    if student.lang == 'ua':
-        week_name = 'Тиждень'
-        days_name = days_name_ua
-    elif student.lang == 'ru':
-        week_name = 'Неделя'
-        days_name = days_name_ru
+    week_name = misc.week_name[student.lang]
+    day_names = misc.day_names[student.lang]
     subjects = f"📆 *{week_name} {week_num}*\n\n"
     days_sub = api_data['Monday'], api_data['Tuesday'], api_data['Wednesday'], api_data['Thursday'], api_data['Friday']
     for i, day in enumerate(days_sub):
-        subjects = f"{subjects}*📌 {days_name[i]}*\n"
-        for j, p_num in enumerate(para_num):
-            para_json = day[para_name[j]]
+        subjects += f"*📌 {day_names[i]}*\n"
+        for j, p_num in enumerate(misc.para_num):
+            para_json = day[misc.para_name[j]]
             if para_json['Name']:
-                name = para_json['Name'].replace('`', "'")
-                prepod = para_json['Prepod'].replace('`', "'")
+                name = esc_md(para_json['Name'])
+                prepod = esc_md(para_json['Prepod'])
                 para_data = f"*{name}* _{para_json['vid']}_\n➖ {para_json['Aud']} _({prepod})_"
-                subjects = f"{subjects}{p_num} {para_data}\n"
-        subjects = f"{subjects}➖➖➖➖➖➖➖➖➖➖➖➖\n"
+                subjects += f"{p_num} {para_data}\n"
+        subjects += "➖➖➖➖➖➖➖➖➖➖➖➖\n"
     await message.answer(subjects, parse_mode='Markdown')
 
 
@@ -355,17 +334,16 @@ async def page_sport(message, student: Student, api_data: list):
     key = types.InlineKeyboardMarkup()
     for a in api_data:
         key.add(types.InlineKeyboardButton(a['sport'], callback_data=set_callback(CallbackFuncs.SPORT_TYPE, a['sportid'])))
-    await message.answer(__('page_sport', locale=student.lang), reply_markup=key)
+    await message.answer(student.text('page_sport'), reply_markup=key)
 
 
-def get_days_keyboard(s_id):
-    # TODO move to utils, i18n
-    days = ('Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд')
+def get_days_keyboard(sport_id, locale):
+    days = misc.day_short_names[locale]
     buttons = []
     key = types.InlineKeyboardMarkup()
     for day in range(len(days)):
         buttons.append(types.InlineKeyboardButton(days[day],
-                       callback_data=set_callback(CallbackFuncs.SPORT_DAY, {'day': day, 'id': s_id})))
+                       callback_data=set_callback(CallbackFuncs.SPORT_DAY, {'day': day, 'id': sport_id})))
     key.add(*buttons[0:3])
     key.add(*buttons[3:5])
     key.add(*buttons[5:])
@@ -375,17 +353,9 @@ def get_days_keyboard(s_id):
 # noinspection PyUnusedLocal
 @load_page(path=misc.api_sport)
 async def get_sport_schedule(message, sport_id, student: Student, api_data: list, day=0):
-    # TODO move to utils, i18n
-    day_names_api_match = ("Понеділок", "Вівторок", "Середа", "Четвер", "П`ятниця", "Субота", "Неділя")
-    day_names_ua = ("Понеділок", "Вівторок", "Середа", "Четвер", "П\'ятниця", "Субота", "Неділя")
-    day_names_ru = ("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье")
-    day_names = None
-    if student.lang == 'ua':
-        day_names = day_names_ua
-    elif student.lang == 'ru':
-        day_names = day_names_ru
+    day_names = misc.day_names[student.lang]
     text = f"{day_names[day]}:\n\n"
-    day = day_names_api_match[day]
+    day = misc.day_names_api_match[day]
     for a in api_data:
         if a['day'] == day:
             text += "{time} — {prepod}\n".format(**a)
@@ -458,15 +428,14 @@ async def show_all_list(message, sem, student: Student, api_data: list, sort=Fal
         fio = a['fio']
         sbal100 = float(a['sbal100']).__round__(1)
         if int(a['studid']) == student.id:
-            text += f"⭐ *{fio.lstrip()} ➖ {sbal100}*\n"
+            text += f"⭐ *{esc_md(fio.lstrip())} ➖ {sbal100}*\n"
         else:
-            text += f"*{n}.* {fio.lstrip()} ➖ {sbal100}\n"
-    text = text.replace('`', "'")
+            text += f"*{n}.* {esc_md(fio.lstrip())} ➖ {sbal100}\n"
     if not text:
-        text = __('not_found', locale=student.lang)
+        text = student.text('not_found')
     key = types.InlineKeyboardMarkup()
     if not sort:
-        key.add(types.InlineKeyboardButton(__('rating_sort', locale=student.lang),
+        key.add(types.InlineKeyboardButton(student.text('rating_sort'),
                                            callback_data=set_callback(CallbackFuncs.RATING_SHOW_ALL_SORT, sem)))
     await bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=key)
 
@@ -516,27 +485,27 @@ async def sport_select(message, callback_query, sport_id, student: Student):
         with suppress(exceptions.InvalidQueryID):
             await callback_query.answer(misc.req_err_msg, show_alert=True)
         return
-    await message.answer(schedule, reply_markup=get_days_keyboard(sport_id))
+    await message.answer(schedule, reply_markup=get_days_keyboard(sport_id, student.lang))
 
 
 @auth_student
 async def sport_day(message, callback_query, data, student: Student):
     day = data.get('day')
-    s_id = data.get('id')
+    sport_id = data.get('id')
     with suppress(exceptions.MessageNotModified):
-        schedule = await get_sport_schedule(message, sport_id=s_id, student=student, day=day)
+        schedule = await get_sport_schedule(message, sport_id=sport_id, student=student, day=day)
         if not schedule:
             with suppress(exceptions.InvalidQueryID):
                 await callback_query.answer(misc.req_err_msg, show_alert=True)
             return
-        await message.edit_text(schedule, reply_markup=get_days_keyboard(s_id))
+        await message.edit_text(schedule, reply_markup=get_days_keyboard(sport_id, student.lang))
 
 
 async def search_students(message):
     student = await authentication(message)
     if not student: return False
     await SearchStudent.user.set()
-    await message.answer(__('search_student', locale=student.lang))
+    await message.answer(student.text('search_student'))
 
 
 @dp.message_handler(content_types=types.ContentTypes.ANY, state=SearchStudent)
@@ -547,7 +516,7 @@ async def handle_text(message: types.Message, state: FSMContext, student: Studen
     selectByFNQuery = "SELECT mail, pass FROM users WHERE f_name=(%s) AND l_name=(%s) GROUP BY stud_id"
     if message.forward_date:
         if not message.forward_from:
-            await message.reply(__('user_hidden', locale=student.lang))
+            await message.reply(student.text('user_hidden'))
             return
         user_id = message.forward_from.id
         with DatabaseConnection() as db:
@@ -556,48 +525,48 @@ async def handle_text(message: types.Message, state: FSMContext, student: Studen
             result = cursor.fetchall()
     else:
         if not message.text:
-            await message.reply(__('wrong_format', locale=student.lang))
+            await message.reply(student.text('wrong_format'))
             return
         if message.text in misc.buttons_ua_1 + misc.buttons_ua_2 + misc.buttons_ru_1 + misc.buttons_ru_2:
-            await message.reply(__('wrong_format', locale=student.lang))
+            await message.reply(student.text('wrong_format'))
             return
         try:
             message.text.encode('utf-8')
         except UnicodeError:
-            await message.reply(__('wrong_format', locale=student.lang))
+            await message.reply(student.text('wrong_format'))
             return
-        s = message.text.replace('`', "'").split()
+        s = esc_md(message.text).split()
         if len(s) != 2:
-            await message.reply(__('wrong_format', locale=student.lang))
+            await message.reply(student.text('wrong_format'))
             return
         with DatabaseConnection() as db:
             conn, cursor = db
             cursor.executemany(selectByFNQuery, [(s[0].capitalize(), s[1].capitalize())])
             result = cursor.fetchall()
     if not result:
-        await message.reply(__('not_found', locale=student.lang))
+        await message.reply(student.text('not_found'))
         return
     for res in result:
         answer = await api_request(message, email=res[0], passwd=res[1], page=1)
         if answer is None: continue
         if not answer:
-            await message.reply(__('not_found', locale=student.lang))
+            await message.reply(student.text('not_found'))
             continue
-        main_page = __('page_1', locale=student.lang).format(**answer[0]).replace("`", "'")
+        main_page = student.text('page_1').format(**esc_md(answer[0]))
         await message.reply(main_page, parse_mode='Markdown')
         await sleep(.05)
 
 
 @auth_student
 async def get_news(message, student: Student):
-    message_id = (await message.answer(__('loading', locale=student.lang))).message_id
+    message_id = (await message.answer(student.text('loading'))).message_id
     news = news_parser.parse_news(student.faculty, update_last=False)
     if not news:
-        await bot.edit_message_text(__('faculty_unsupported', locale=student.lang), message.chat.id, message_id)
+        await bot.edit_message_text(student.text('faculty_unsupported'), message.chat.id, message_id)
         return
     news_str = ''
     for i, post in enumerate(news.posts, 1):
-        news_str += f'*{i}.* [{esc_markdown(post.title)}]({esc_markdown(post.link)})\n'
+        news_str += f'*{i}.* [{esc_md(post.title)}]({esc_md(post.link)})\n'
         if i == 10: break
     await bot.edit_message_text(news_str, message.chat.id, message_id, parse_mode='Markdown')
 

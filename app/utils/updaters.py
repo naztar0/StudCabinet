@@ -99,7 +99,7 @@ async def updater_news():
             if not news:
                 continue
             str_send = f'❗ *Опубліковано новину кафедри*\n' \
-                       f'✔ [{mu.esc_markdown(news[0].title)}]({mu.esc_markdown(news[0].link)})'
+                       f'✔ [{mu.esc_md(news[0].title)}]({mu.esc_md(news[0].link)})'
             with DatabaseConnection() as db:
                 conn, cursor = db
                 cursor.execute(selectQuery, [faculties[faculty]])
