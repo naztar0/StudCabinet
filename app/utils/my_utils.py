@@ -1,5 +1,6 @@
 import json
 import requests
+from random import choice
 from contextlib import suppress
 from aiogram import types
 from aiogram.utils import exceptions, callback_data
@@ -11,7 +12,7 @@ from app.utils.database_connection import DatabaseConnection
 class Student:
     def __init__(self, args):
         if not args or not isinstance(args, (list, tuple, dict)) or len(args) < 6:
-            args = (None for _ in range(6))
+            args = tuple(None for _ in range(6))
         self.mail = args[0]
         self.password = args[1]
         self.id = args[2]
@@ -31,6 +32,8 @@ class Keyboards:
     UA_2 = 0x01
     RU_1 = 0x02
     RU_2 = 0x03
+    EN_1 = 0x04
+    EN_2 = 0x05
 
 
 class CallbackFuncs:
@@ -97,7 +100,11 @@ def reply_keyboard(key_type: int):
         buttons = misc.buttons_ru_1
     elif key_type == Keyboards.RU_2:
         buttons = misc.buttons_ru_2
-    key = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, input_field_placeholder="Select a button...")
+    elif key_type == Keyboards.EN_1:
+        buttons = misc.buttons_en_1
+    elif key_type == Keyboards.EN_2:
+        buttons = misc.buttons_en_2
+    key = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, input_field_placeholder=choice(misc.placeholders))
     for btn in buttons:
         key.insert(btn)
     return key
@@ -159,6 +166,8 @@ async def authentication(message, first=False, skip=False):
             key_type = Keyboards.UA_1
             if student.lang == 'ru':
                 key_type = Keyboards.RU_1
+            elif student.lang == 'en':
+                key_type = Keyboards.EN_1
             await message.answer(student.text('auth_err_1'), reply_markup=reply_keyboard(key_type))
     else:
         if not student:

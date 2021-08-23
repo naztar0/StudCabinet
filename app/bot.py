@@ -16,6 +16,7 @@ from aiogram.utils import exceptions
 class Form(StatesGroup): authorization = State()
 class Feedback(StatesGroup): text = State()
 class SendMessageToUsers(StatesGroup): text = State()
+class SendMessageToUser(StatesGroup): text = State()
 class SearchStudent(StatesGroup): user = State()
 class GetNews(StatesGroup): processing = State()
 
@@ -50,6 +51,35 @@ async def feedback(message: types.Message, state: FSMContext):
     await message.answer(student.text('feedback_finish'))
 
 
+@dp.message_handler(commands=['reply'])
+async def handle_text(message: types.Message):
+    if message.chat.id == config.BOT_ADMIN:
+        await message.answer("Введите 'user_id сообщение' для отправки пользователю (Markdown)\n\nОтмена - [/exit]")
+        await SendMessageToUser.text.set()
+
+
+@dp.message_handler(content_types=['text'], state=SendMessageToUser.text)
+async def handle_text(message: types.Message, state: FSMContext):
+    await state.finish()
+    if message.text == "/exit":
+        await message.answer("Отменено")
+        return
+    try:
+        test = await message.answer(message.text, parse_mode='Markdown')
+    except exceptions.CantParseEntities:
+        await message.answer("Неверный формат Markdown!")
+        return
+    await bot.delete_message(message.chat.id, test.message_id)
+    data = message.text.split(maxsplit=1)
+    if not data[0].isdigit() or len(data) != 2:
+        await message.answer("Неверный формат user_id!")
+        return
+    if await send_message(bot.send_message, chat_id=int(data[0]), text=data[1], parse_mode='Markdown'):
+        await message.answer('Отправлено')
+    else:
+        await message.answer('Не отправлено')
+
+
 @dp.message_handler(commands=['send'])
 async def handle_text(message: types.Message):
     if message.chat.id == config.BOT_ADMIN:
@@ -57,7 +87,7 @@ async def handle_text(message: types.Message):
         await SendMessageToUsers.text.set()
 
 
-# TODO make this operations independence
+# TODO make this operations independence, maybe ¯\_('.')_/¯
 @dp.message_handler(content_types=['text'], state=SendMessageToUsers.text)
 async def handle_text(message: types.Message, state: FSMContext):
     await state.finish()
@@ -86,6 +116,8 @@ async def handle_text(message: types.Message, state: FSMContext):
             j += 1
         await bot.edit_message_text(f'{n}/{len_users}', message.chat.id, progress_message)
         await sleep(.1)
+        if n % 100 == 0:
+            await sleep(3)
     await message.answer(f"Отправлено: {i}\nНе отправлено: {j}")
 
 
@@ -101,39 +133,47 @@ async def handle_text(message: types.Message, state: FSMContext):
         await message.answer(misc.helper_ua, parse_mode="Markdown", disable_web_page_preview=True)
     elif message.text == misc.buttons_ru_2[4]:
         await message.answer(misc.helper_ru, parse_mode="Markdown", disable_web_page_preview=True)
-    elif message.text == misc.buttons_ua_1[0] or message.text == misc.buttons_ru_1[0]:
+    elif message.text == misc.buttons_en_2[4]:
+        await message.answer(misc.helper_en, parse_mode="Markdown", disable_web_page_preview=True)
+    elif message.text in (misc.buttons_ua_1[0], misc.buttons_ru_1[0], misc.buttons_en_1[0]):
         await page_1(message)
-    elif message.text in (misc.buttons_ua_1[1], misc.buttons_ru_1[1]):
+    elif message.text in (misc.buttons_ua_1[1], misc.buttons_ru_1[1], misc.buttons_en_1[1]):
         await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_2, 12))
-    elif message.text in (misc.buttons_ua_1[2], misc.buttons_ru_1[2]):
+    elif message.text in (misc.buttons_ua_1[2], misc.buttons_ru_1[2], misc.buttons_en_1[2]):
         await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_5, 12))
-    elif message.text in (misc.buttons_ua_1[6], misc.buttons_ru_1[6]):
+    elif message.text in (misc.buttons_ua_1[6], misc.buttons_ru_1[6], misc.buttons_en_1[6]):
         await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_4, 12))
-    elif message.text in (misc.buttons_ua_1[4], misc.buttons_ru_1[4]):
+    elif message.text in (misc.buttons_ua_1[4], misc.buttons_ru_1[4], misc.buttons_en_1[4]):
         await choose_from_inline(message, misc.week_name, generate_inline_keyboard(CallbackFuncs.SCHEDULE, 2))
-    elif message.text in (misc.buttons_ua_1[3], misc.buttons_ru_1[3]):
+    elif message.text in (misc.buttons_ua_1[3], misc.buttons_ru_1[3], misc.buttons_en_1[3]):
         await page_3(message)
-    elif message.text in (misc.buttons_ua_1[5], misc.buttons_ru_1[5]):
+    elif message.text in (misc.buttons_ua_1[5], misc.buttons_ru_1[5], misc.buttons_en_1[5]):
         await page_sport(message)
-    elif message.text in (misc.buttons_ua_2[0], misc.buttons_ru_2[0]):
+    elif message.text in (misc.buttons_ua_2[0], misc.buttons_ru_2[0], misc.buttons_en_2[0]):
         await page_6(message)
-    elif message.text in (misc.buttons_ua_2[1], misc.buttons_ru_2[1]):
+    elif message.text in (misc.buttons_ua_2[1], misc.buttons_ru_2[1], misc.buttons_en_2[1]):
         await send_pdf(message)
     elif message.text == misc.buttons_ua_2[5]:
         await change_lang(message, 'ru')
     elif message.text == misc.buttons_ru_2[5]:
+        await change_lang(message, 'en')
+    elif message.text == misc.buttons_en_2[5]:
         await change_lang(message, 'ua')
     elif message.text == misc.buttons_ua_1[7]:
         await message.answer(misc.buttons_ua_1[7], reply_markup=reply_keyboard(Keyboards.UA_2))
     elif message.text == misc.buttons_ru_1[7]:
         await message.answer(misc.buttons_ru_1[7], reply_markup=reply_keyboard(Keyboards.RU_2))
+    elif message.text == misc.buttons_en_1[7]:
+        await message.answer(misc.buttons_en_1[7], reply_markup=reply_keyboard(Keyboards.EN_2))
     elif message.text == misc.buttons_ua_2[6]:
         await message.answer(misc.buttons_ua_2[6], reply_markup=reply_keyboard(Keyboards.UA_1))
     elif message.text == misc.buttons_ru_2[6]:
         await message.answer(misc.buttons_ru_2[6], reply_markup=reply_keyboard(Keyboards.RU_1))
-    elif message.text in (misc.buttons_ua_2[2], misc.buttons_ru_2[2]):
+    elif message.text == misc.buttons_en_2[6]:
+        await message.answer(misc.buttons_en_2[6], reply_markup=reply_keyboard(Keyboards.EN_1))
+    elif message.text in (misc.buttons_ua_2[2], misc.buttons_ru_2[2], misc.buttons_en_2[2]):
         await search_students(message)
-    elif message.text in (misc.buttons_ua_2[3], misc.buttons_ru_2[3]):
+    elif message.text in (misc.buttons_ua_2[3], misc.buttons_ru_2[3], misc.buttons_en_2[3]):
         await GetNews.processing.set()
         try: await get_news(message)
         finally: await state.finish()
@@ -271,7 +311,7 @@ async def page_5(message, sem, student: Student, api_data: list):
 @auth_student
 @load_page(page=4)
 async def page_4(message, sem, student: Student, api_data: list):
-    subjects = "*Курс {kurs}, семестр {semestr}:*\n\n".format(**api_data[0])
+    subjects = student.text('page_4_head').format(**api_data[0])
     for i, a in enumerate(api_data):
         control = student.text('page_2_exam')
         if a['control'] == "З": control = student.text('page_2_zach')
@@ -381,12 +421,15 @@ async def change_lang(message, lang):
     elif lang == 'ru':
         text = "Выбран русский язык"
         key_type = Keyboards.RU_2
+    elif lang == 'en':
+        text = "English selected"
+        key_type = Keyboards.EN_2
     await message.answer(text, reply_markup=reply_keyboard(key_type))
 
 
 # noinspection PyUnusedLocal
 @load_page(page=2)
-async def calculate_mark(student, sem, api_data: list):
+async def calculate_mark(message, student, sem, api_data: list):
     mark100 = mark5 = credits_ = 0
     for subj in api_data:
         if not subj['oc_bol'] or not subj['credit']:
@@ -411,7 +454,7 @@ async def show_all_list(message, sem, student: Student, api_data: list, sort=Fal
     text = ''
     if contract:
         sort = True
-        mark = await calculate_mark(student, sem=sem)
+        mark = await calculate_mark(message, student=student, sem=sem)
         if not mark:
             await message.answer(misc.req_err_msg)
             return
@@ -461,7 +504,6 @@ async def send_histogram_of_page_2(message, sem, student: Student, api_data: lis
     await bot.send_photo(message.chat.id, img)
 
 
-# noinspection PyUnusedLocal
 @auth_student
 @load_page(page=4)
 async def send_histogram_of_page_4(message, sem, student: Student, api_data: list):
@@ -472,7 +514,7 @@ async def send_histogram_of_page_4(message, sem, student: Student, api_data: lis
         score.append(int(float(n['credit']))) if n['credit'] else score.append(0)
         subject.append(n['subject'])
         count += 1
-    histogram.histogram(count, score, subject, f"Семестр {sem}")
+    histogram.histogram(count, score, subject, f"{misc.sem_name[student.lang]} {sem}")
     with open("app/media/img.png", "rb") as f:
         img = f.read()
     await bot.send_photo(message.chat.id, img)

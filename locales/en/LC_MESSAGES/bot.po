@@ -1,0 +1,121 @@
+msgid "cancel"
+msgstr "Canceled"
+
+msgid "not_found"
+msgstr "Not found"
+
+msgid "histogram"
+msgstr "Histogram"
+
+msgid "rating_sort"
+msgstr "Sort by rating"
+
+msgid "loading"
+msgstr "Loading..."
+
+msgid "faculty_unsupported"
+msgstr "It looks like your faculty is not supported yet"
+
+msgid "search_student"
+msgstr "Send the student's first and last name (in Ukrainian), or forward me any student's message"
+
+msgid "user_hidden"
+msgstr "The account was hidden by the user"
+
+msgid "wrong_format"
+msgstr "Wrong format"
+
+msgid "feedback_start"
+msgstr "Write a message with wishes or questions regarding the bot\n\nCancel - [/exit]"
+
+msgid "feedback_finish"
+msgstr "Your message has been sent"
+
+msgid "auth_err_1"
+msgstr "It looks like you have already entered your account"
+
+msgid "page_1"
+msgstr ""
+"👤 *Full name:* {fam} {imya} {otch}\n\n"
+"🔢 *Year:* {kurs}\n\n👥 *Group:* {grupa}\n\n"
+"🏢 *Faculty:* {fakultet}\n\n👨‍🏫 *Cathedra:* {kafedra}\n\n"
+"🔴 *Specialization:* {specialization}\n\n"
+"🔵 *Speciality:* {speciality}\n\n"
+"🟢 *Educational program:* {osvitprog}\n\n"
+"👨‍🎓 *Level of study:* {train_level}\n\n"
+"🛄 *Form of study:* {train_form}\n\n💵 *Payment:* {oplata}"
+
+msgid "page_2_exam"
+msgstr "Exam"
+
+msgid "page_2_zach"
+msgstr "Credit"
+
+msgid "page_2"
+msgstr ""
+"📚 *Subject:* {}\n"
+"✅ *Mark:* {}\n"
+"✏ *Control:* {}\n"
+"📊 *Credit:* {}\n"
+"❗ *Debt:* {}\n"
+"➖➖➖➖➖➖➖➖➖➖➖➖\n\n"
+
+msgid "page_5"
+msgstr ""
+"📊 *Rating number:* {} of {}\n\n"
+"✅ *Rating mark:* {} | {}\n\n"
+
+msgid "page_5_rate"
+msgstr "📈 *Rating percentage:* {} %\n\n"
+
+msgid "page_5_stp"
+msgstr "💸 *Probability of getting a scholarship:* "
+
+msgid "page_5_probability_high"
+msgstr "high"
+
+msgid "page_5_probability_low"
+msgstr "low"
+
+msgid "page_5_probability_zero"
+msgstr "zero"
+
+msgid "page_5_ps"
+msgstr "\n\n_PS: if no marks are given in all disciplines, then the rating is not reliable_"
+
+msgid "page_5_all_list"
+msgstr "Show full list"
+
+msgid "page_4"
+msgstr ""
+"*{}. Subject:* {}\n"
+"⏱ *Classroom hours:* {}\n"
+"📊 *Credit:* {}\n"
+"✏ *Control:* {}\n"
+"➖➖➖➖➖➖➖➖➖➖➖➖\n\n"
+
+msgid "page_4_head"
+msgstr "*Year {kurs}, semester {semestr}:*\n\n"
+
+msgid "page_3"
+msgstr ""
+"📚 *Subject:* {}\n"
+"👨‍🏫 *Professor:* {}\n"
+"📅 *Date:* {}\n"
+"➖➖➖➖➖➖➖➖➖➖➖➖\n\n"
+
+msgid "page_sport"
+msgstr "Choose a sport"
+
+msgid "page_6_header"
+msgstr ""
+"🔖 *Contract* {} *dated* {} *No.*\n"
+"💳 *Actual cost:* {} UAH.\n\n"
+
+msgid "page_6"
+msgstr ""
+"🔢 *Semester*: {}\n"
+"📆 *Date:* {}\n"
+"💵 *Cost:* {} грн.\n"
+"🆔 *Payment number:* {}\n"
+"➖➖➖➖➖➖➖➖➖➖➖➖\n\n"
