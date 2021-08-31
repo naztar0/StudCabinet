@@ -2,7 +2,7 @@
 import json
 from app.misc import faculties as fa, temp_dir
 from bs4 import BeautifulSoup as BS
-from app.utils.my_utils import req_post
+from app.utils.my_utils import *
 
 
 class Post:
@@ -103,7 +103,7 @@ def parse_4():
 
 
 def parse_5():
-    req = req_post("http://web.kpi.kharkov.ua/eee/uk/", 'GET')
+    req = req_post("http://web.kpi.kharkov.ua/eee/", 'GET')
     if not req:
         return
     html = BS(req.content, 'html.parser')
@@ -126,23 +126,26 @@ def parse_news(n, update_last=True):
     :param update_last: Check for updates
     :return: Posts object
     """
+    parsers = {fa[0]: parse_1, fa[1]: parse_2, fa[2]: parse_3, fa[3]: parse_4, fa[4]: parse_5}
     if not isinstance(n, (str, int)):
         return
-    if isinstance(n, str):
-        parsers = {fa[0]: parse_1, fa[1]: parse_2, fa[2]: parse_3, fa[3]: parse_4, fa[4]: parse_5}
-        if not parsers.get(n):
-            return
-    else:
-        parsers = (parse_1, parse_2, parse_3, parse_4, parse_5)
+    if isinstance(n, int):
+        n: str = fa[n]
+    if not parsers.get(n):
+        return
     posts = parsers[n]()
     if not posts:
         return
     if update_last:
-        with open(f'{temp_dir}/news_posts.json', 'r') as f:
-            data = json.load(f)
-        if data[n] == posts[0].id:
+        filename_posts = temp_dir/'news_posts.json'
+        filename_texts = temp_dir/'news_texts.json'
+        last_post_id = get_update_json(filename_posts, n)
+        if last_post_id == posts[0].id:
             return
-        data[n] = posts[0].id
-        with open(f'{temp_dir}/news_posts.json', 'w') as f:
-            json.dump(data, f)
+        get_update_json(filename_posts, n, posts[0].id)
+        news_str = ''
+        for i, post in enumerate(posts, 1):
+            news_str += f'*{i}.* [{esc_md(post.title)}]({esc_md(post.link)})\n'
+            if i == 10: break
+        get_update_json(filename_texts, n, news_str)
     return posts
