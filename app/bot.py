@@ -1,10 +1,11 @@
 #!/usr/bin/env python
+import logging
 from asyncio import sleep
 from contextlib import suppress
 from app import config, misc
-from app.misc import bot, dp
+from app.misc import bot, dp, temp_dir
 from app.utils.my_utils import *
-from app.utils import histogram, news_parser
+from app.utils import histogram
 from app.utils.database_connection import DatabaseConnection
 
 from aiogram import executor, types
@@ -18,7 +19,6 @@ class Feedback(StatesGroup): text = State()
 class SendMessageToUsers(StatesGroup): text = State()
 class SendMessageToUser(StatesGroup): text = State()
 class SearchStudent(StatesGroup): user = State()
-class GetNews(StatesGroup): processing = State()
 
 
 @dp.message_handler(commands=['start'])
@@ -87,7 +87,6 @@ async def handle_text(message: types.Message):
         await SendMessageToUsers.text.set()
 
 
-# TODO make this operations independence, maybe ¯\_('.')_/¯
 @dp.message_handler(content_types=['text'], state=SendMessageToUsers.text)
 async def handle_text(message: types.Message, state: FSMContext):
     await state.finish()
@@ -100,29 +99,12 @@ async def handle_text(message: types.Message, state: FSMContext):
         await message.answer("Неверный формат Markdown!")
         return
     await bot.delete_message(message.chat.id, test.message_id)
-    selectQuery = "SELECT user_id FROM users"
-    with DatabaseConnection() as db:
-        conn, cursor = db
-        cursor.execute(selectQuery)
-        users = cursor.fetchall()
-    i = 0
-    j = 0
-    len_users = len(users)
-    progress_message = (await message.answer(f'0/{len_users}')).message_id
-    for n, user in enumerate(users, 1):
-        if await send_message(bot.send_message, chat_id=user[0], text=message.text, parse_mode='Markdown'):
-            i += 1
-        else:
-            j += 1
-        await bot.edit_message_text(f'{n}/{len_users}', message.chat.id, progress_message)
-        await sleep(.1)
-        if n % 100 == 0:
-            await sleep(3)
-    await message.answer(f"Отправлено: {i}\nНе отправлено: {j}")
+    with open(temp_dir/'posting.txt', 'w') as f:
+        f.write(message.text)
 
 
 @dp.message_handler(content_types=['text'])
-async def handle_text(message: types.Message, state: FSMContext):
+async def handle_text(message: types.Message):
     if message.text == misc.sign_in_butt:
         student = await authentication(message, first=True)
         if student:
@@ -174,9 +156,7 @@ async def handle_text(message: types.Message, state: FSMContext):
     elif message.text in (misc.buttons_ua_2[2], misc.buttons_ru_2[2], misc.buttons_en_2[2]):
         await search_students(message)
     elif message.text in (misc.buttons_ua_2[3], misc.buttons_ru_2[3], misc.buttons_en_2[3]):
-        await GetNews.processing.set()
-        try: await get_news(message)
-        finally: await state.finish()
+        await get_news(message)
 
 
 @dp.message_handler(content_types=['text'], state=Form.authorization)
@@ -601,16 +581,11 @@ async def handle_text(message: types.Message, state: FSMContext, student: Studen
 
 @auth_student
 async def get_news(message, student: Student):
-    message_id = (await message.answer(student.text('loading'))).message_id
-    news = news_parser.parse_news(student.faculty, update_last=False)
+    news = get_update_json(temp_dir/'news_texts.json', student.faculty)
     if not news:
-        await bot.edit_message_text(student.text('faculty_unsupported'), message.chat.id, message_id)
+        await message.answer(student.text('faculty_unsupported'))
         return
-    news_str = ''
-    for i, post in enumerate(news.posts, 1):
-        news_str += f'*{i}.* [{esc_md(post.title)}]({esc_md(post.link)})\n'
-        if i == 10: break
-    await bot.edit_message_text(news_str, message.chat.id, message_id, parse_mode='Markdown')
+    await message.answer(news, parse_mode='Markdown')
 
 
 @dp.callback_query_handler(lambda callback_query: True)
@@ -656,7 +631,7 @@ async def callback_inline(callback_query: types.CallbackQuery):
 async def on_startup(_):
     await bot.set_webhook(config.WEBHOOK_URL)
     info = await bot.get_webhook_info()
-    print(f'URL: {info.url}\nPending update count: {info.pending_update_count}')
+    logging.warning(f'URL: {info.url}\nPending update count: {info.pending_update_count}')
 
 
 async def on_shutdown(_):
@@ -670,4 +645,5 @@ def start_pooling():
 def start_webhook():
     executor.start_webhook(dispatcher=dp, webhook_path=config.WEBHOOK_PATH,
                            on_startup=on_startup, on_shutdown=on_shutdown,
-                           host=config.WEBAPP_HOST, port=config.WEBAPP_PORT)
+                           host=config.WEBAPP_HOST, port=config.WEBAPP_PORT,
+                           skip_updates=True, print=logging.warning)

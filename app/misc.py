@@ -1,7 +1,9 @@
+import logging
 from pathlib import Path
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.contrib.middlewares.i18n import I18nMiddleware
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from app import config
 
 
@@ -9,12 +11,13 @@ app_dir: Path = Path(__file__).parent.parent
 locales_dir = app_dir / "locales"
 temp_dir = app_dir / "temp"
 
+logging.basicConfig(level=logging.WARNING)
+i18n = I18nMiddleware('bot', locales_dir, default='ua')
 
 bot = Bot(config.TG_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-
-i18n = I18nMiddleware('bot', locales_dir, default='ua')
+dp.middleware.setup(LoggingMiddleware())
 dp.middleware.setup(i18n)
 __ = i18n.gettext
 

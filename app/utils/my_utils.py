@@ -79,6 +79,8 @@ def req_post(url, method='POST'):
 
 
 def esc_md(s):
+    if s is None:
+        return ''
     if isinstance(s, str):
         if not s: return ''
         return s.replace('_', '\\_').replace('*', '\\*').replace('`', "'").replace('[', '\\[')
@@ -88,6 +90,18 @@ def esc_md(s):
         return list(map(lambda x: esc_md(x), s))
     if isinstance(s, (int, float, bool)):
         return str(s)
+
+
+def get_update_json(filename, key=None, value=None):
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    if not key:
+        return data
+    if not value:
+        return data.get(key)
+    data[key] = value
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False)
 
 
 def reply_keyboard(key_type: int):
@@ -179,6 +193,8 @@ async def authentication(message, first=False, skip=False):
 def auth_student(function):
     async def decorator(message, *args, **kwargs):
         kwargs['student'] = await authentication(message)
+        if not kwargs['student']:
+            return
         if function.__name__ == 'decorator':
             expected = kwargs
         else:
@@ -211,4 +227,4 @@ def load_page(**kwargs):
 
 
 __all__ = ('Keyboards', 'CallbackFuncs', 'delete_message', 'send_message', 'req_post', 'esc_md', 'reply_keyboard', 'set_callback', 'get_callback',
-           'generate_inline_keyboard', 'api_request', 'authentication', 'reg_key', 'Student', 'auth_student', 'load_page')
+           'generate_inline_keyboard', 'api_request', 'authentication', 'reg_key', 'Student', 'auth_student', 'load_page', 'get_update_json')
