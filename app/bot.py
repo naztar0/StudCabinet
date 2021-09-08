@@ -223,7 +223,7 @@ async def choose_from_inline(message, names, reply_markup, student: Student):
 
 
 @auth_student
-@load_page(allow_invalid=True, page=1)
+@load_page(mandatory=True, page=1)
 async def page_1(message, student: Student, api_data):
     if not api_data:
         await message.answer(misc.auth_err_msg)

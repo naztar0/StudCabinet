@@ -215,8 +215,11 @@ def load_page(**kwargs):
             api_kwargs['day'] = kwargs_.get('day') or ''
             api_kwargs['sport_id'] = kwargs_.get('sport_id') or ''
             data = await api_request(message, **api_kwargs, **kwargs)
-            if not data and not kwargs.get('allow_invalid'):
-                if student:
+            if not data:
+                if kwargs.get('mandatory'):
+                    await message.answer(misc.auth_err_msg)
+                    await reg_key(message)
+                elif student:
                     await message.answer(student.text('not_found'))
                 return
             kwargs_['api_data'] = data
