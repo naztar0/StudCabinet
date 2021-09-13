@@ -157,7 +157,8 @@ async def api_request(message=None, path=misc.api_cab, **kwargs):
         if message:
             await message.answer(misc.req_err_msg)
         return
-    return response.json()
+    with suppress(json.decoder.JSONDecodeError):
+        return response.json()
 
 
 async def reg_key(message):
@@ -176,6 +177,10 @@ async def authentication(message, first=False, skip=False):
     if skip:
         return student
     if first:
+        if student.mail and student.password:
+            data_check = await api_request(message, email=student.mail, passwd=student.password, page=1)
+            if not data_check:
+                return
         if student:
             key_type = Keyboards.UA_1
             if student.lang == 'ru':
