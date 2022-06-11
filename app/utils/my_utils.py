@@ -3,7 +3,7 @@ import requests
 from random import choice
 from contextlib import suppress
 from aiogram import types
-from aiogram.utils import exceptions, callback_data
+from aiogram.utils import exceptions, callback_data, helper
 from app import misc
 from app.misc import i18n, __
 from app.utils.database_connection import DatabaseConnection
@@ -27,13 +27,14 @@ class Student:
         return __(name, locale=self.lang)
 
 
-class Keyboards:
-    UA_1 = 0x00
-    UA_2 = 0x01
-    RU_1 = 0x02
-    RU_2 = 0x03
-    EN_1 = 0x04
-    EN_2 = 0x05
+class Keyboards(helper.HelperMode):
+    mode = helper.HelperMode.lowercase
+    UA_1 = helper.Item()
+    UA_2 = helper.Item()
+    RU_1 = helper.Item()
+    RU_2 = helper.Item()
+    EN_1 = helper.Item()
+    EN_2 = helper.Item()
 
 
 class CallbackFuncs:
@@ -65,12 +66,12 @@ async def send_message(func, **kwargs):
         return await func(**kwargs)
 
 
-def req_post(url, method='POST'):
+def req_post(url, method='POST', **kwargs):
     try:
         if method == 'POST':
-            response = requests.post(url, timeout=20)
+            response = requests.post(url, timeout=20, **kwargs)
         elif method == 'GET':
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=10, **kwargs)
         else:
             return
     except (requests.exceptions.ReadTimeout,
@@ -104,20 +105,16 @@ def get_update_json(filename, key=None, value=None):
         json.dump(data, f, ensure_ascii=False)
 
 
-def reply_keyboard(key_type: int):
-    buttons = None
-    if key_type == Keyboards.UA_1:
-        buttons = misc.buttons_ua_1
-    elif key_type == Keyboards.UA_2:
-        buttons = misc.buttons_ua_2
-    elif key_type == Keyboards.RU_1:
-        buttons = misc.buttons_ru_1
-    elif key_type == Keyboards.RU_2:
-        buttons = misc.buttons_ru_2
-    elif key_type == Keyboards.EN_1:
-        buttons = misc.buttons_en_1
-    elif key_type == Keyboards.EN_2:
-        buttons = misc.buttons_en_2
+def reply_keyboard(key_type: helper.Item):
+    key_types = {
+        Keyboards.UA_1: misc.buttons_ua_1,
+        Keyboards.UA_2: misc.buttons_ua_2,
+        Keyboards.RU_1: misc.buttons_ru_1,
+        Keyboards.RU_2: misc.buttons_ru_2,
+        Keyboards.EN_1: misc.buttons_en_1,
+        Keyboards.EN_2: misc.buttons_en_2
+    }
+    buttons = key_types.get(key_type) or ()
     key = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, input_field_placeholder=choice(misc.placeholders))
     for btn in buttons:
         key.insert(btn)
@@ -147,17 +144,14 @@ def generate_inline_keyboard(page, count, row=3):
     return key
 
 
-async def api_request(message=None, path=misc.api_cab, **kwargs):
-    args = ''
-    for arg in kwargs:
-        args += f'&{arg.replace("passwd", "pass", 1)}={kwargs[arg]}'
-    args = '?' + args[1:]
-    response = req_post(misc.api_url + path + args)
+async def api_request(message=None, params=None, url=misc.api_cab):
+    response = req_post(url, params=params)
     if not response:
         if message:
             await message.answer(misc.req_err_msg)
         return
-    return response.json()
+    with suppress(json.decoder.JSONDecodeError):
+        return response.json()
 
 
 async def reg_key(message):
@@ -176,6 +170,10 @@ async def authentication(message, first=False, skip=False):
     if skip:
         return student
     if first:
+        if student.mail and student.password:
+            data_check = await api_request(message, {'email': student.mail, 'pass': student.password, 'page': 1})
+            if not data_check:
+                return
         if student:
             key_type = Keyboards.UA_1
             if student.lang == 'ru':
@@ -203,24 +201,28 @@ def auth_student(function):
     return decorator
 
 
-def load_page(**kwargs):
+def load_page(page=None, path=misc.api_cab, mandatory=False):
     def wrapper(function):
-        async def decorator(message, **kwargs_):
+        async def decorator(message, **kwargs):
             api_kwargs = {}
-            student: Student = kwargs_.get('student')
+            student: Student = kwargs.get('student')
             if student:
                 api_kwargs['email'] = student.mail
-                api_kwargs['passwd'] = student.password
-            api_kwargs['semestr'] = kwargs_.get('sem') or ''
-            api_kwargs['day'] = kwargs_.get('day') or ''
-            api_kwargs['sport_id'] = kwargs_.get('sport_id') or ''
-            data = await api_request(message, **api_kwargs, **kwargs)
-            if not data and not kwargs.get('allow_invalid'):
-                if student:
+                api_kwargs['pass'] = student.password
+            if page: api_kwargs['page'] = page
+            if kwargs.get('sem'): api_kwargs['semestr'] = kwargs['sem']
+            if kwargs.get('day'): api_kwargs['day'] = kwargs['day']
+            if kwargs.get('sport_id'): api_kwargs['sport_id'] = kwargs['sport_id']
+            data = await api_request(message, api_kwargs, url=path)
+            if not data:
+                if mandatory:
+                    await message.answer(misc.auth_err_msg)
+                    await reg_key(message)
+                elif student:
                     await message.answer(student.text('not_found'))
                 return
-            kwargs_['api_data'] = data
-            expected = {key: kwargs_[key] for key in function.__code__.co_varnames if kwargs_.get(key)}
+            kwargs['api_data'] = data
+            expected = {key: kwargs[key] for key in function.__code__.co_varnames if kwargs.get(key)}
             return await function(message, **expected)
         return decorator
     return wrapper

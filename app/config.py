@@ -4,7 +4,7 @@ from envparse import env
 from dotenv import load_dotenv
 
 load_dotenv()
-DEBUG = False if len(argv) > 1 and argv[1] == '-O' else True
+DEBUG = not (len(argv) > 1 and argv[1] == '-O')
 
 TG_TOKEN = env.str('TG_TOKEN')
 WEBAPP_HOST = env.str('WEBAPP_HOST', default='0.0.0.0')

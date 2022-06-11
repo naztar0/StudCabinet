@@ -1,8 +1,8 @@
-requests~=2.26.0
-aiogram~=2.14.3
-Pillow~=8.3.1
-beautifulsoup4~=4.9.3
-mysql-connector-python~=8.0.26
+requests~=2.27.1
+aiogram~=2.20
+Pillow~=9.1.1
+beautifulsoup4~=4.11.1
+mysql-connector-python~=8.0.29
 envparse~=0.2.0
-python-dotenv~=0.18.0
-aiohttp~=3.7.4.post0
+python-dotenv~=0.20.0
+aiohttp~=3.8.1
