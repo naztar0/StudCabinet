@@ -167,15 +167,15 @@ async def registration(message: types.Message, state: FSMContext):
         await message.answer("Невірний формат")
         return
     mail, passwd = s
-    answer = await api_request(message, email=mail, passwd=passwd, page=1)
+    answer = await api_request(message, {'email': mail, 'pass': passwd, 'page': 1})
     if answer is None: return
     if not answer:
-        await message.answer("Неправильний email або пароль")
+        await message.answer("Невірний email або пароль")
         return
     student_id = answer[0]['st_cod']
     group_id = answer[0]['gid']
-    f_name = answer[0]['imya']
-    l_name = answer[0]['fam']
+    f_name = answer[0]['imya'].replace('`', "'")
+    l_name = answer[0]['fam'].replace('`', "'")
     faculty = answer[0]['grupa'].split('-')[0]
     selectQuery = "SELECT EXISTS (SELECT ID FROM users WHERE user_id=(%s))"
     insertQuery = "INSERT INTO users (user_id, stud_id, group_id, mail, pass, f_name, l_name, faculty) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
@@ -198,7 +198,7 @@ async def registration(message: types.Message, state: FSMContext):
         cursor.execute(selectUserQuery, [message.chat.id])
         user_id = cursor.fetchone()[0]
     for sem in range(1, 13):
-        rec_book = await api_request(message, email=mail, passwd=passwd, page=2, semestr=sem)
+        rec_book = await api_request(message, {'email': mail, 'pass': passwd, 'page': 2, 'semestr': sem})
         if rec_book is None:
             continue
         if not rec_book:
@@ -326,7 +326,7 @@ async def page_6(message, student: Student, api_data: list):
 @auth_student
 async def page_academic_schedule(message, week_num, student: Student):
     week = '' if week_num == 1 else '2'
-    api_data = await api_request(message, path=f'{misc.api_sched}{week}/{student.group_id}')
+    api_data = await api_request(message, url=f'{misc.api_sched}{week}/{student.group_id}')
     if api_data is None: return
     if not api_data:
         await message.answer(student.text('not_found'))
@@ -384,8 +384,11 @@ async def get_sport_schedule(message, sport_id, student: Student, api_data: list
 
 @auth_student
 async def send_pdf(message, student: Student):
-    url = f'{misc.api_url}{misc.api_doc}?email={student.mail}&pass={student.password}'
-    await bot.send_document(message.chat.id, url)
+    url = f'{misc.api_doc}?email={student.mail}&pass={student.password}'
+    try:
+        await bot.send_document(message.chat.id, url)
+    except (exceptions.WrongFileIdentifier, exceptions.InvalidHTTPUrlContent):
+        await message.answer(student.text('not_found'))
 
 
 async def change_lang(message, lang):
@@ -438,7 +441,7 @@ async def show_all_list(message, sem, student: Student, api_data: list, sort=Fal
         if not mark:
             await message.answer(misc.req_err_msg)
             return
-        main_info = await api_request(message, email=student.mail, passwd=student.password, page=1)
+        main_info = await api_request(message, {'email': student.mail, 'pass': student.password, 'page': 1})
         if not main_info: return
         main_info = main_info[0]
         f_name = main_info['imya'] if main_info['imya'] else '-'
@@ -476,7 +479,7 @@ async def send_histogram_of_page_2(message, sem, student: Student, api_data: lis
         score.append(int(n['oc_bol']))
         subject.append(n['subject'])
         count += 1
-    answer = await api_request(message, email=student.mail, passwd=student.password, page=1)
+    answer = await api_request(message, {'email': student.mail, 'pass': student.password, 'page': 1})
     if answer is None: return
     histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer[0]))
     with open("app/media/img.png", "rb") as f:
@@ -569,7 +572,7 @@ async def handle_text(message: types.Message, state: FSMContext, student: Studen
         await message.reply(student.text('not_found'))
         return
     for res in result:
-        answer = await api_request(message, email=res[0], passwd=res[1], page=1)
+        answer = await api_request(message, {'email': res[0], 'pass': res[1], 'page': 1})
         if answer is None: continue
         if not answer:
             await message.reply(student.text('not_found'))
