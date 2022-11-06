@@ -46,7 +46,7 @@ async def feedback(message: types.Message, state: FSMContext):
     username = esc_md(message.from_user.username)
     text = f"*Feedback!\n\nUser:* [{name}](tg://user?id={message.from_user.id})\n" \
            f"*UserName:* @{username}\n*ID:* {message.from_user.id}"
-    await bot.send_message(config.BOT_ADMIN, text, parse_mode="Markdown")
+    await bot.send_message(config.BOT_ADMIN, text, parse_mode='Markdown')
     await bot.forward_message(config.BOT_ADMIN, message.chat.id, message.message_id)
     await message.answer(student.text('feedback_finish'))
 
@@ -58,7 +58,7 @@ async def handle_text(message: types.Message):
         await SendMessageToUser.text.set()
 
 
-@dp.message_handler(content_types=['text'], state=SendMessageToUser.text)
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=SendMessageToUser.text)
 async def handle_text(message: types.Message, state: FSMContext):
     await state.finish()
     if message.text == "/exit":
@@ -87,7 +87,7 @@ async def handle_text(message: types.Message):
         await SendMessageToUsers.text.set()
 
 
-@dp.message_handler(content_types=['text'], state=SendMessageToUsers.text)
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=SendMessageToUsers.text)
 async def handle_text(message: types.Message, state: FSMContext):
     await state.finish()
     if message.text == "/exit":
@@ -103,30 +103,26 @@ async def handle_text(message: types.Message, state: FSMContext):
         f.write(message.text)
 
 
-@dp.message_handler(content_types=['text'])
+@dp.message_handler(content_types=types.ContentTypes.TEXT)
 async def handle_text(message: types.Message):
     if message.text == misc.sign_in_butt:
         student = await authentication(message, first=True)
         if student:
             return
-        await message.answer(misc.greetings_text, parse_mode="Markdown")
+        await message.answer(misc.greetings_text, parse_mode='Markdown')
         await Form.authorization.set()
-    elif message.text == misc.buttons_ua_2[4]:
-        await message.answer(misc.helper_ua, parse_mode="Markdown", disable_web_page_preview=True)
-    elif message.text == misc.buttons_ru_2[4]:
-        await message.answer(misc.helper_ru, parse_mode="Markdown", disable_web_page_preview=True)
-    elif message.text == misc.buttons_en_2[4]:
-        await message.answer(misc.helper_en, parse_mode="Markdown", disable_web_page_preview=True)
+    elif message.text in (misc.buttons_ua_2[4], misc.buttons_ru_2[4], misc.buttons_en_2[4]):
+        await send_help(message)
     elif message.text in (misc.buttons_ua_1[0], misc.buttons_ru_1[0], misc.buttons_en_1[0]):
         await page_1(message)
     elif message.text in (misc.buttons_ua_1[1], misc.buttons_ru_1[1], misc.buttons_en_1[1]):
-        await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_2, 12))
+        await choose_from_inline(message, 'semester', generate_inline_keyboard(CallbackFuncs.PAGE_2, 12))
     elif message.text in (misc.buttons_ua_1[2], misc.buttons_ru_1[2], misc.buttons_en_1[2]):
-        await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_5, 12))
+        await choose_from_inline(message, 'semester', generate_inline_keyboard(CallbackFuncs.PAGE_5, 12))
     elif message.text in (misc.buttons_ua_1[6], misc.buttons_ru_1[6], misc.buttons_en_1[6]):
-        await choose_from_inline(message, misc.sem_name, generate_inline_keyboard(CallbackFuncs.PAGE_4, 12))
+        await choose_from_inline(message, 'semester', generate_inline_keyboard(CallbackFuncs.PAGE_4, 12))
     elif message.text in (misc.buttons_ua_1[4], misc.buttons_ru_1[4], misc.buttons_en_1[4]):
-        await choose_from_inline(message, misc.week_name, generate_inline_keyboard(CallbackFuncs.SCHEDULE, 2))
+        await choose_from_inline(message, 'week', generate_inline_keyboard(CallbackFuncs.SCHEDULE, 2))
     elif message.text in (misc.buttons_ua_1[3], misc.buttons_ru_1[3], misc.buttons_en_1[3]):
         await page_3(message)
     elif message.text in (misc.buttons_ua_1[5], misc.buttons_ru_1[5], misc.buttons_en_1[5]):
@@ -159,7 +155,7 @@ async def handle_text(message: types.Message):
         await get_news(message)
 
 
-@dp.message_handler(content_types=['text'], state=Form.authorization)
+@dp.message_handler(content_types=types.ContentTypes.TEXT, state=Form.authorization)
 async def registration(message: types.Message, state: FSMContext):
     await state.finish()
     s = message.text.split()
@@ -217,9 +213,14 @@ async def registration(message: types.Message, state: FSMContext):
                     conn.commit()
 
 
+@dp.message_handler(content_types=types.ContentTypes.WEB_APP_DATA)
+async def web_app_data(message: types.Message, state: FSMContext):
+    print(message.web_app_data.data)  # TODO: add web app data handler
+
+
 @auth_student
-async def choose_from_inline(message, names, reply_markup, student: Student):
-    await message.answer(names[student.lang], reply_markup=reply_markup)
+async def choose_from_inline(message, text, reply_markup, student: Student):
+    await message.answer(student.text(text), reply_markup=reply_markup)
 
 
 @auth_student
@@ -227,11 +228,11 @@ async def choose_from_inline(message, names, reply_markup, student: Student):
 async def page_1(message, student: Student, api_data):
     if not api_data:
         await message.answer(misc.auth_err_msg)
-        await message.answer(misc.greetings_text, parse_mode="Markdown", reply_markup=types.ReplyKeyboardRemove())
+        await message.answer(misc.greetings_text, parse_mode='Markdown', reply_markup=types.ReplyKeyboardRemove())
         await Form.authorization.set()
         return
     main_page = student.text('page_1').format(**esc_md(api_data[0]))
-    await message.answer(main_page, parse_mode="Markdown")
+    await message.answer(main_page, parse_mode='Markdown')
 
 
 @auth_student
@@ -255,7 +256,7 @@ async def page_2(message, sem, student: Student, api_data: list):
         key_histogram = types.InlineKeyboardMarkup()
         key_histogram.add(types.InlineKeyboardButton(student.text('histogram'),
                                                      callback_data=set_callback(CallbackFuncs.HISTOGRAM_2, sem)))
-    await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
+    await message.answer(subjects, parse_mode='Markdown', reply_markup=key_histogram)
 
 
 @auth_student
@@ -285,7 +286,7 @@ async def page_5(message, sem, student: Student, api_data: list):
     key_extend = types.InlineKeyboardMarkup()
     key_extend.add(types.InlineKeyboardButton(student.text('page_5_all_list'),
                                               callback_data=set_callback(CallbackFuncs.RATING_SHOW_ALL, sem)))
-    await message.answer(rang1 + percent_str + stip + ps, parse_mode="Markdown", reply_markup=key_extend)
+    await message.answer(rang1 + percent_str + stip + ps, parse_mode='Markdown', reply_markup=key_extend)
 
 
 @auth_student
@@ -302,7 +303,7 @@ async def page_4(message, sem, student: Student, api_data: list):
         key_histogram = types.InlineKeyboardMarkup()
         key_histogram.add(types.InlineKeyboardButton(student.text('histogram'),
                                                      callback_data=set_callback(CallbackFuncs.HISTOGRAM_4, sem)))
-    await message.answer(subjects, parse_mode="Markdown", reply_markup=key_histogram)
+    await message.answer(subjects, parse_mode='Markdown', reply_markup=key_histogram)
 
 
 @auth_student
@@ -311,7 +312,7 @@ async def page_3(message, student: Student, api_data: list):
     subjects = ''
     for a in api_data:
         subjects += student.text('page_3').format(*esc_md([a['subject'], a['prepod'], a['data']]))
-    await message.answer(subjects, parse_mode="Markdown")
+    await message.answer(subjects, parse_mode='Markdown')
 
 
 @auth_student
@@ -320,7 +321,7 @@ async def page_6(message, student: Student, api_data: list):
     subjects = student.text('page_6_header').format(api_data[0]['dog_name'], api_data[0]['start_date'], api_data[0]['dog_price'])
     for a in api_data:
         subjects += student.text('page_6').format(*esc_md([a['term_start'], a['paid_date'], a['paid_value'], a['dp_id']]))
-    await message.answer(subjects, parse_mode="Markdown")
+    await message.answer(subjects, parse_mode='Markdown')
 
 
 @auth_student
@@ -331,12 +332,10 @@ async def page_academic_schedule(message, week_num, student: Student):
     if not api_data:
         await message.answer(student.text('not_found'))
         return
-    week_name = misc.week_name[student.lang]
-    day_names = misc.day_names[student.lang]
-    subjects = f"📆 *{week_name} {week_num}*\n\n"
+    subjects = f"📆 *{student.text('week')} {week_num}*\n\n"
     days_sub = api_data['Monday'], api_data['Tuesday'], api_data['Wednesday'], api_data['Thursday'], api_data['Friday']
     for i, day in enumerate(days_sub):
-        subjects += f"*📌 {day_names[i]}*\n"
+        subjects += f"*📌 {student.text(misc.days_names[i])}*\n"
         for j, p_num in enumerate(misc.para_num):
             para_json = day[misc.para_name[j]]
             if para_json['Name']:
@@ -357,12 +356,11 @@ async def page_sport(message, student: Student, api_data: list):
     await message.answer(student.text('page_sport'), reply_markup=key)
 
 
-def get_days_keyboard(sport_id, locale):
-    days = misc.day_short_names[locale]
+def get_days_keyboard(sport_id, student: Student):
     buttons = []
     key = types.InlineKeyboardMarkup()
-    for day in range(len(days)):
-        buttons.append(types.InlineKeyboardButton(days[day],
+    for day in range(len(misc.days_short)):
+        buttons.append(types.InlineKeyboardButton(student.text(misc.days_short[day]),
                        callback_data=set_callback(CallbackFuncs.SPORT_DAY, {'day': day, 'id': sport_id})))
     key.add(*buttons[0:3])
     key.add(*buttons[3:5])
@@ -373,8 +371,7 @@ def get_days_keyboard(sport_id, locale):
 # noinspection PyUnusedLocal
 @load_page(path=misc.api_sport)
 async def get_sport_schedule(message, sport_id, student: Student, api_data: list, day=0):
-    day_names = misc.day_names[student.lang]
-    text = f"{day_names[day]}:\n\n"
+    text = f"{student.text(misc.days_names[day])}:\n\n"
     day = misc.day_names_api_match[day]
     for a in api_data:
         if a['day'] == day:
@@ -463,7 +460,7 @@ async def show_all_list(message, sem, student: Student, api_data: list, sort=Fal
     if not sort:
         key.add(types.InlineKeyboardButton(student.text('rating_sort'),
                                            callback_data=set_callback(CallbackFuncs.RATING_SHOW_ALL_SORT, sem)))
-    await bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=key)
+    await bot.send_message(message.chat.id, text, parse_mode='Markdown', reply_markup=key)
 
 
 # noinspection PyUnusedLocal
@@ -497,7 +494,7 @@ async def send_histogram_of_page_4(message, sem, student: Student, api_data: lis
         score.append(int(float(n['credit']))) if n['credit'] else score.append(0)
         subject.append(n['subject'])
         count += 1
-    histogram.histogram(count, score, subject, f"{misc.sem_name[student.lang]} {sem}")
+    histogram.histogram(count, score, subject, f"{student.text('semester')} {sem}")
     with open("app/media/img.png", "rb") as f:
         img = f.read()
     await bot.send_photo(message.chat.id, img)
@@ -510,7 +507,7 @@ async def sport_select(message, callback_query, sport_id, student: Student):
         with suppress(exceptions.InvalidQueryID):
             await callback_query.answer(misc.req_err_msg, show_alert=True)
         return
-    await message.answer(schedule, reply_markup=get_days_keyboard(sport_id, student.lang))
+    await message.answer(schedule, reply_markup=get_days_keyboard(sport_id, student))
 
 
 @auth_student
@@ -523,7 +520,7 @@ async def sport_day(message, callback_query, data, student: Student):
             with suppress(exceptions.InvalidQueryID):
                 await callback_query.answer(misc.req_err_msg, show_alert=True)
             return
-        await message.edit_text(schedule, reply_markup=get_days_keyboard(sport_id, student.lang))
+        await message.edit_text(schedule, reply_markup=get_days_keyboard(sport_id, student))
 
 
 async def search_students(message):
@@ -589,6 +586,11 @@ async def get_news(message, student: Student):
         await message.answer(student.text('faculty_unsupported'))
         return
     await message.answer(news, parse_mode='Markdown')
+
+
+@auth_student
+async def send_help(message, student: Student):
+    await message.answer(student.text('helper'), parse_mode='Markdown', disable_web_page_preview=True)
 
 
 @dp.callback_query_handler(lambda callback_query: True)

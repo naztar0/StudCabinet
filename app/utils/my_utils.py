@@ -107,17 +107,20 @@ def get_update_json(filename, key=None, value=None):
 
 def reply_keyboard(key_type: helper.Item):
     key_types = {
-        Keyboards.UA_1: misc.buttons_ua_1,
-        Keyboards.UA_2: misc.buttons_ua_2,
-        Keyboards.RU_1: misc.buttons_ru_1,
-        Keyboards.RU_2: misc.buttons_ru_2,
-        Keyboards.EN_1: misc.buttons_en_1,
-        Keyboards.EN_2: misc.buttons_en_2
+        Keyboards.UA_1: (1, 'ua', misc.buttons_ua_1),
+        Keyboards.UA_2: (2, 'ua', misc.buttons_ua_2),
+        Keyboards.RU_1: (1, 'ru', misc.buttons_ru_1),
+        Keyboards.RU_2: (2, 'ru', misc.buttons_ru_2),
+        Keyboards.EN_1: (1, 'en', misc.buttons_en_1),
+        Keyboards.EN_2: (2, 'en', misc.buttons_en_2)
     }
-    buttons = key_types.get(key_type) or ()
+    page, locale, buttons = key_types[key_type]
     key = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, input_field_placeholder=choice(misc.placeholders))
     for btn in buttons:
         key.insert(btn)
+    if page == 2:
+        key.insert(types.KeyboardButton(__('qr_login_btn', locale=locale),
+                                        web_app=types.WebAppInfo(url=f'{misc.qr_scan_url}?locale={locale}')))
     return key
 
 
