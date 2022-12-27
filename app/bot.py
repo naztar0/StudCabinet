@@ -203,7 +203,7 @@ async def registration(message: types.Message, state: FSMContext):
             mark = a['oc_bol']
             if mark:
                 continue
-            subj_id = int(a['subj_id'])
+            subj_id = a['oc_id']
             with DatabaseConnection() as db:
                 conn, cursor = db
                 cursor.executemany(existsRecBookQuery, [(user_id, subj_id, sem)])
