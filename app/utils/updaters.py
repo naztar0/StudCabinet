@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import json
 import app.utils.my_utils as mu
-from app.misc import bot, faculties, temp_dir, api_cab
+from app.misc import bot, faculties, temp_dir, api_url_v2, api_required_params
 from app.config import BOT_ADMIN
 from app.utils.database_connection import DatabaseConnection
 from app.utils.news_parser import parse_news
@@ -29,16 +29,18 @@ async def updater_record_book():
             results = cursor.fetchall()
         for item in results:
             select_id, subj_id, semester, mail, passwd, user_id = item
-            response = mu.req_post(api_cab, params={'email': mail, 'pass': passwd, 'page': 2, 'semestr': semester})
+            response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': semester} | api_required_params)
             if not response:
                 continue
             rec_book = json.loads(response.text)
             if not rec_book:
                 continue
+            print(rec_book)
             for a in rec_book:
-                if not a['subj_id'].isdigit():
+                print(a)
+                if not a['oc_id']:
                     continue
-                if int(a['subj_id']) == subj_id:
+                if a['oc_id'] == subj_id:
                     mark = a['oc_bol']
                     if mark:
                         await _send_update_record_book(user_id, semester, a)
@@ -72,7 +74,7 @@ async def update_users_record_book():
         for res in results:
             user_id, mail, passwd = res
             for sem in range(1, 13):
-                response = mu.req_post(api_cab, params={'email': mail, 'pass': passwd, 'page': 2, 'semestr': sem})
+                response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': sem} | api_required_params)
                 if not response:
                     continue
                 rec_book = json.loads(response.text)
@@ -80,9 +82,9 @@ async def update_users_record_book():
                     break
                 for a in rec_book:
                     mark = a['oc_bol']
-                    if mark or not a['subj_id'].isdigit():
+                    if mark or not a['oc_id']:
                         continue
-                    subj_id = int(a['subj_id'])
+                    subj_id = a['oc_id']
                     with DatabaseConnection() as db:
                         conn, cursor = db
                         cursor.executemany(existsQuery, [(user_id, subj_id, sem)])

@@ -95,7 +95,7 @@ msgstr ""
 "➖➖➖➖➖➖➖➖➖➖➖➖\n\n"
 
 msgid "page_4_head"
-msgstr "*Курс {kurs}, семестр {semestr}:*\n\n"
+msgstr "*Курс {kurs}, семестр {semester}:*\n\n"
 
 msgid "page_3"
 msgstr ""

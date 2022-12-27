@@ -164,15 +164,15 @@ async def registration(message: types.Message, state: FSMContext):
         return
     mail, passwd = s
     answer = await api_request(message, {'email': mail, 'pass': passwd, 'page': 1})
-    if answer is None: return
+    if answer is False: return
     if not answer:
         await message.answer("Невірний email або пароль")
         return
-    student_id = answer[0]['st_cod']
-    group_id = answer[0]['gid']
-    f_name = answer[0]['imya'].replace('`', "'")
-    l_name = answer[0]['fam'].replace('`', "'")
-    faculty = answer[0]['grupa'].split('-')[0]
+    student_id = answer['st_cod']
+    group_id = answer['gid']
+    f_name = answer['imya'].replace('`', "'")
+    l_name = answer['fam'].replace('`', "'")
+    faculty = answer['grupa'].split('-')[0]
     selectQuery = "SELECT EXISTS (SELECT ID FROM users WHERE user_id=(%s))"
     insertQuery = "INSERT INTO users (user_id, stud_id, group_id, mail, pass, f_name, l_name, faculty) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     updateQuery = "UPDATE users SET mail=(%s), pass=(%s) WHERE user_id=(%s)"
@@ -194,7 +194,7 @@ async def registration(message: types.Message, state: FSMContext):
         cursor.execute(selectUserQuery, [message.chat.id])
         user_id = cursor.fetchone()[0]
     for sem in range(1, 13):
-        rec_book = await api_request(message, {'email': mail, 'pass': passwd, 'page': 2, 'semestr': sem})
+        rec_book = await api_request(message, {'email': mail, 'pass': passwd, 'page': 2, 'semester': sem})
         if rec_book is None:
             continue
         if not rec_book:
@@ -231,7 +231,7 @@ async def page_1(message, student: Student, api_data):
         await message.answer(misc.greetings_text, parse_mode='Markdown', reply_markup=types.ReplyKeyboardRemove())
         await Form.authorization.set()
         return
-    main_page = student.text('page_1').format(**esc_md(api_data[0]))
+    main_page = student.text('page_1').format(**esc_md(api_data))
     await message.answer(main_page, parse_mode='Markdown')
 
 
@@ -242,13 +242,16 @@ async def page_2(message, sem, student: Student, api_data: list):
     subjects = ''
     for a in api_data:
         control = student.text('page_2_exam')
-        if a['control'] == "З": control = student.text('page_2_zach')
+        if a['control'] == "З":
+            control = student.text('page_2_zach')
         hvost = a['if_hvost']
-        if not hvost: hvost = "—"
-        ball = "{oc_short}{oc_ects} {oc_bol}".format(**a)
-        if ball == " ":
+        if not hvost:
+            hvost = "—"
+        if not a['oc_short']:
             ball = "—"
             with_mark -= 1
+        else:
+            ball = "{oc_short}{oc_ects} {oc_bol}".format(**a)
         subjects += student.text('page_2').format(*esc_md([a['subject'], ball, control, a['credit'], hvost]))
 
     key_histogram = None
@@ -296,7 +299,7 @@ async def page_4(message, sem, student: Student, api_data: list):
     for i, a in enumerate(api_data):
         control = student.text('page_2_exam')
         if a['control'] == "З": control = student.text('page_2_zach')
-        subjects += student.text('page_4').format(i + 1, *esc_md([a['subject'], a['audit'], a['credit']]), control)
+        subjects += student.text('page_4').format(i + 1, *esc_md([a['subj_name'], a['audit'], a['credit']]), control)
 
     key_histogram = None
     if len(api_data) > 4:
@@ -311,7 +314,7 @@ async def page_4(message, sem, student: Student, api_data: list):
 async def page_3(message, student: Student, api_data: list):
     subjects = ''
     for a in api_data:
-        subjects += student.text('page_3').format(*esc_md([a['subject'], a['prepod'], a['data']]))
+        subjects += student.text('page_3').format(*esc_md([a['subj_name'], a['prepod_fio'], a['data']]))
     await message.answer(subjects, parse_mode='Markdown')
 
 
@@ -440,7 +443,6 @@ async def show_all_list(message, sem, student: Student, api_data: list, sort=Fal
             return
         main_info = await api_request(message, {'email': student.mail, 'pass': student.password, 'page': 1})
         if not main_info: return
-        main_info = main_info[0]
         f_name = main_info['imya'] if main_info['imya'] else '-'
         m_name = main_info['otch'] if main_info['otch'] else '-'
         api_data.append({'fio': f"{main_info['fam']} {f_name[0]}. {m_name[0]}.",
@@ -471,14 +473,14 @@ async def send_histogram_of_page_2(message, sem, student: Student, api_data: lis
     score = []
     count = 0
     for n in api_data:
-        if not n['oc_bol'].isdigit():
+        if n['oc_bol'] is None:
             continue
-        score.append(int(n['oc_bol']))
+        score.append(n['oc_bol'])
         subject.append(n['subject'])
         count += 1
     answer = await api_request(message, {'email': student.mail, 'pass': student.password, 'page': 1})
     if answer is None: return
-    histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer[0]))
+    histogram.histogram(count, score, subject, "{fam} {imya}\n{otch}".format(**answer))
     with open("app/media/img.png", "rb") as f:
         img = f.read()
     await bot.send_photo(message.chat.id, img)
@@ -492,7 +494,7 @@ async def send_histogram_of_page_4(message, sem, student: Student, api_data: lis
     count = 0
     for n in api_data:
         score.append(int(float(n['credit']))) if n['credit'] else score.append(0)
-        subject.append(n['subject'])
+        subject.append(n['subj_name'])
         count += 1
     histogram.histogram(count, score, subject, f"{student.text('semester')} {sem}")
     with open("app/media/img.png", "rb") as f:
@@ -574,7 +576,7 @@ async def handle_text(message: types.Message, state: FSMContext, student: Studen
         if not answer:
             await message.reply(student.text('not_found'))
             continue
-        main_page = student.text('page_1').format(**esc_md(answer[0]))
+        main_page = student.text('page_1').format(**esc_md(answer))
         await message.reply(main_page, parse_mode='Markdown')
         await sleep(.05)
 

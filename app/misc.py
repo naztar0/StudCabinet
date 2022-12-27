@@ -22,11 +22,13 @@ dp.middleware.setup(i18n)
 __ = i18n.gettext
 
 
-api_url = "http://schedule.kpi.kharkov.ua/json"
-api_cab = api_url + "/kabinet"
-api_sport = api_url + "/sport"
-api_sched = api_url + "/Schedule"
-api_doc = api_url + "/getpdf"
+api_url_v1 = "https://schedule.kpi.kharkov.ua/json"
+api_url_v2 = "https://cabinet.kpi.kharkov.ua/servlets/servlet_kab_stud.php"
+api_sport = api_url_v1 + "/sport"
+api_sched = api_url_v1 + "/Schedule"
+api_doc = api_url_v1 + "/getpdf"
+
+api_required_params = {"fio_student": "Iванов C.B. "}
 
 qr_scan_url = 'https://27e1-93-178-222-144.eu.ngrok.io'
 
