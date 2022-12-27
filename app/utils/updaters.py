@@ -30,14 +30,12 @@ async def updater_record_book():
         for item in results:
             select_id, subj_id, semester, mail, passwd, user_id = item
             response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': semester} | api_required_params)
-            if not response:
+            if not response or not response.text:
                 continue
             rec_book = json.loads(response.text)
             if not rec_book:
                 continue
-            print(rec_book)
             for a in rec_book:
-                print(a)
                 if not a['oc_id']:
                     continue
                 if a['oc_id'] == subj_id:
@@ -75,7 +73,7 @@ async def update_users_record_book():
             user_id, mail, passwd = res
             for sem in range(1, 13):
                 response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': sem} | api_required_params)
-                if not response:
+                if not response or not response.text:
                     continue
                 rec_book = json.loads(response.text)
                 if not rec_book:
