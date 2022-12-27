@@ -95,7 +95,7 @@ msgstr ""
 "➖➖➖➖➖➖➖➖➖➖➖➖\n\n"
 
 msgid "page_4_head"
-msgstr "*Year {kurs}, semester {semestr}:*\n\n"
+msgstr "*Year {kurs}, semester {semester}:*\n\n"
 
 msgid "page_3"
 msgstr ""
@@ -119,3 +119,78 @@ msgstr ""
 "💵 *Cost:* {} грн.\n"
 "🆔 *Payment number:* {}\n"
 "➖➖➖➖➖➖➖➖➖➖➖➖\n\n"
+
+msgid "monday"
+msgstr "Monday"
+
+msgid "tuesday"
+msgstr "Tuesday"
+
+msgid "wednesday"
+msgstr "Wednesday"
+
+msgid "thursday"
+msgstr "Thursday"
+
+msgid "friday"
+msgstr "Friday"
+
+msgid "saturday"
+msgstr "Saturday"
+
+msgid "sunday"
+msgstr "Sunday"
+
+msgid "mon"
+msgstr "Mon"
+
+msgid "tue"
+msgstr "Tue"
+
+msgid "wed"
+msgstr "Wed"
+
+msgid "thu"
+msgstr "Thu"
+
+msgid "fri"
+msgstr "Fri"
+
+msgid "sat"
+msgstr "Sat"
+
+msgid "sun"
+msgstr "Sun"
+
+msgid "week"
+msgstr "Week"
+
+msgid "semester"
+msgstr "Semester"
+
+msgid "qr_login_text"
+msgstr "Login to the NeoCab through the QR code"
+
+msgid "qr_login_btn"
+msgstr "📷 QR login"
+
+msgid "helper"
+msgstr ""
+"*Personal* [e-cabinets](https://studcabinet.kpi.kharkov.ua) *and* [Telegram bot](https://t.me/StudCabinet_Bot) *have been developed for university students, "
+"which are the new format of grade books.*\n\n"
+"*Such services are available in the e-account:*\n"
+"— General information about the student\n"
+"— Electronic record book data\n"
+"— Rating of students according to the results of the session (for the appointment of a scholarship)\n"
+"— State of academic debt for the previous period\n"
+"— Working hours of all sports sections\n"
+"— Curriculum (by semester)\n"
+"— All data about tuition fees (for contractors)\n\n"
+"It is also possible to upload an electronic version of an individual semester report to the office with its further printout (at the request of the student), "
+"as well as, in perspective, other certificates issued by deans.\n\n"
+"Other services are currently indicated in the account as inactive. All of them will be activated as the base of the automated educational process management system is filled. "
+"Among them are the announcements of the faculty (institute, department), the schedule for the elimination of the student's academic debts, "
+"news of the university press center, schedule of teachers' consultations, choice of disciplines of free choice, receiving a list of vacancies from the Career Center. \n\n"
+"New service developer — [Information and Computing Center NTU «KhPI»](https://web.kpi.kharkov.ua), "
+"which acted on the basis of the decision of the [Academic Council of the university](http://blogs.kpi.kharkov.ua/v2/vr/archives/1633?fbclid=IwAR2Gqbw_ACiCe2fQOCQBTaH9BnBn0uzPWlc9lPyCLa2qpfHSSed1rm44550) dated September 27, 2019 No.\n\n"
+"For feedback click \\[/feedback]"
