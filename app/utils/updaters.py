@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import json
 import app.utils.my_utils as mu
-from app.misc import bot, faculties, temp_dir
+from app.misc import bot, faculties, temp_dir, api_cab
 from app.config import BOT_ADMIN
 from app.utils.database_connection import DatabaseConnection
 from app.utils.news_parser import parse_news
@@ -29,13 +29,15 @@ async def updater_record_book():
             results = cursor.fetchall()
         for item in results:
             select_id, subj_id, semester, mail, passwd, user_id = item
-            response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={semester}')
+            response = mu.req_post(api_cab, params={'email': mail, 'pass': passwd, 'page': 2, 'semestr': semester})
             if not response:
                 continue
             rec_book = json.loads(response.text)
             if not rec_book:
                 continue
             for a in rec_book:
+                if not a['subj_id'].isdigit():
+                    continue
                 if int(a['subj_id']) == subj_id:
                     mark = a['oc_bol']
                     if mark:
@@ -70,7 +72,7 @@ async def update_users_record_book():
         for res in results:
             user_id, mail, passwd = res
             for sem in range(1, 13):
-                response = mu.req_post(f'https://schedule.kpi.kharkov.ua/json/kabinet?email={mail}&pass={passwd}&page=2&semestr={sem}')
+                response = mu.req_post(api_cab, params={'email': mail, 'pass': passwd, 'page': 2, 'semestr': sem})
                 if not response:
                     continue
                 rec_book = json.loads(response.text)
@@ -78,7 +80,7 @@ async def update_users_record_book():
                     break
                 for a in rec_book:
                     mark = a['oc_bol']
-                    if mark:
+                    if mark or not a['subj_id'].isdigit():
                         continue
                     subj_id = int(a['subj_id'])
                     with DatabaseConnection() as db:
