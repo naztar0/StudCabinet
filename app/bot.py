@@ -590,8 +590,8 @@ async def get_news(message, student: Student):
     await message.answer(news, parse_mode='Markdown')
 
 
-@auth_student
-async def send_help(message, student: Student):
+async def send_help(message):
+    student = await authentication(message, skip=True)
     await message.answer(student.text('helper'), parse_mode='Markdown', disable_web_page_preview=True)
 
 
