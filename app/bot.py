@@ -11,7 +11,7 @@ from app.utils.database_connection import DatabaseConnection
 from aiogram import executor, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.utils import exceptions
+from aiogram.utils import exceptions, parts
 
 
 class Form(StatesGroup): authorization = State()
@@ -315,7 +315,8 @@ async def page_3(message, student: Student, api_data: list):
     subjects = ''
     for a in api_data:
         subjects += student.text('page_3').format(*esc_md([a['subj_name'], a['prepod_fio'], a['data']]))
-    await message.answer(subjects, parse_mode='Markdown')
+    for part in parts.safe_split_text(subjects, split_separator='\n\n'):
+        await message.answer(part, parse_mode='Markdown')
 
 
 @auth_student
