@@ -35,9 +35,7 @@ async def updater_record_book():
             rec_book = json.loads(response.text)
             if not rec_book:
                 continue
-            print(rec_book)
             for a in rec_book:
-                print(a)
                 if not a['oc_id']:
                     continue
                 if a['oc_id'] == subj_id:
