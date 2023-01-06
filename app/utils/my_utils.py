@@ -150,7 +150,7 @@ def generate_inline_keyboard(page, count, row=3):
 
 async def api_request(message=None, params=None, url=misc.api_url_v2):
     if url == misc.api_url_v2:
-        _json = (params or {}) | misc.api_required_params
+        _json = params or {}
         response = req_post(url, json=_json)
     else:
         response = req_post(url, params=params)
