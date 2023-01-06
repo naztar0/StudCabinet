@@ -74,7 +74,7 @@ async def update_users_record_book():
         for res in results:
             user_id, mail, passwd = res
             for sem in range(1, 13):
-                response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': sem} | api_required_params)
+                response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': sem})
                 if not response:
                     continue
                 rec_book = json.loads(response.text)
