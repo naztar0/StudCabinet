@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import json
 import app.utils.my_utils as mu
-from app.misc import bot, faculties, temp_dir, api_url_v2, api_required_params
+from app.misc import bot, faculties, temp_dir, api_url_v2
 from app.config import BOT_ADMIN
 from app.utils.database_connection import DatabaseConnection
 from app.utils.news_parser import parse_news
@@ -29,13 +29,15 @@ async def updater_record_book():
             results = cursor.fetchall()
         for item in results:
             select_id, subj_id, semester, mail, passwd, user_id = item
-            response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': semester} | api_required_params)
-            if not response or not response.text:
+            response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': semester})
+            if not response:
                 continue
             rec_book = json.loads(response.text)
             if not rec_book:
                 continue
+            print(rec_book)
             for a in rec_book:
+                print(a)
                 if not a['oc_id']:
                     continue
                 if a['oc_id'] == subj_id:
@@ -73,7 +75,7 @@ async def update_users_record_book():
             user_id, mail, passwd = res
             for sem in range(1, 13):
                 response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': sem} | api_required_params)
-                if not response or not response.text:
+                if not response:
                     continue
                 rec_book = json.loads(response.text)
                 if not rec_book:
