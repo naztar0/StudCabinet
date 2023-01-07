@@ -28,6 +28,8 @@ api_sport = api_url_v1 + "/sport"
 api_sched = api_url_v1 + "/Schedule"
 api_doc = api_url_v1 + "/getpdf"
 
+api_required_params = {"fio_student": "快是慢，慢是快"}
+
 qr_scan_url = 'https://27e1-93-178-222-144.eu.ngrok.io'
 
 

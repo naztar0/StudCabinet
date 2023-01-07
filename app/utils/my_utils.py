@@ -148,9 +148,11 @@ def generate_inline_keyboard(page, count, row=3):
     return key
 
 
-async def api_request(message=None, params=None, url=misc.api_url_v2):
+async def api_request(message=None, params=None, url=misc.api_url_v2, student=None):
     if url == misc.api_url_v2:
-        _json = params or {}
+        _json = (params or {}) | misc.api_required_params
+        if student:
+            _json['marks'] = generate_hash_array(student)
         response = req_post(url, json=_json)
     else:
         response = req_post(url, params=params)
@@ -221,7 +223,7 @@ def load_page(page=None, path=misc.api_url_v2, mandatory=False):
             if kwargs.get('sem'): api_kwargs['semester'] = kwargs['sem']
             if kwargs.get('day'): api_kwargs['day'] = kwargs['day']
             if kwargs.get('sport_id'): api_kwargs['sport_id'] = kwargs['sport_id']
-            data = await api_request(message, api_kwargs, url=path)
+            data = await api_request(message, api_kwargs, url=path, student=student)
             if not data:
                 if mandatory:
                     await message.answer(misc.auth_err_msg)
@@ -234,6 +236,13 @@ def load_page(page=None, path=misc.api_url_v2, mandatory=False):
             return await function(message, **expected)
         return decorator
     return wrapper
+
+
+def generate_hash_array(student: Student):
+    code1 = int(str(student.id)[0] + str(student.id)[2] + str(student.id)[4])
+    code2 = int(str(student.group_id)[1:4])
+    result = [code2 if i in (round(code1 / 3), round(code1 / 2)) else code2 - 100 for i in range(code1)]
+    return result
 
 
 __all__ = ('Keyboards', 'CallbackFuncs', 'delete_message', 'send_message', 'req_post', 'esc_md', 'reply_keyboard', 'set_callback', 'get_callback',
