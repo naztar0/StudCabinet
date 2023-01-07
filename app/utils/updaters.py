@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import json
 import app.utils.my_utils as mu
 from app.misc import bot, faculties, temp_dir, api_url_v2
 from app.config import BOT_ADMIN
@@ -32,7 +31,10 @@ async def updater_record_book():
             response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': semester})
             if not response:
                 continue
-            rec_book = json.loads(response.text)
+            try:
+                rec_book = response.json()
+            except ValueError:
+                continue
             if not rec_book:
                 continue
             for a in rec_book:
@@ -75,7 +77,10 @@ async def update_users_record_book():
                 response = mu.req_post(api_url_v2, json={'email': mail, 'pass': passwd, 'page': 2, 'semester': sem})
                 if not response:
                     continue
-                rec_book = json.loads(response.text)
+                try:
+                    rec_book = response.json()
+                except ValueError:
+                    continue
                 if not rec_book:
                     break
                 for a in rec_book:
