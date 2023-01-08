@@ -241,8 +241,7 @@ def load_page(page=None, path=misc.api_url_v2, mandatory=False):
 def generate_hash_array(student: Student):
     code1 = int(str(student.id)[0] + str(student.id)[2] + str(student.id)[4])
     code2 = int(str(student.group_id)[1:4])
-    codes = (round(code1 / 3), round(code1 / 2))
-    result = [code2 if i in codes else code2 - 100 for i in range(code1)]
+    result = tuple(code2 for _ in range(code1))
     return result
 
 
