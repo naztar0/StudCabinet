@@ -32,24 +32,6 @@ class Posts:
 
 
 def parse_1():
-    req = req_post("http://web.kpi.kharkov.ua/cit/uk/", 'GET')
-    if not req:
-        return
-    html = BS(req.content, 'html.parser')
-    posts = Posts()
-    for element in html.select(".post-row"):
-        for item in element.select('article'):
-            if not (item.get("id") and item.find('a')):
-                continue
-            post = Post()
-            post.id = item.get("id")
-            post.title = item.find('a').get("title")
-            post.link = item.find('a').get("href")
-            posts.add(post)
-    return posts
-
-
-def parse_2():
     req = req_post("http://web.kpi.kharkov.ua/if/uk/", 'GET')
     if not req:
         return
@@ -67,7 +49,7 @@ def parse_2():
     return posts
 
 
-def parse_3():
+def parse_2():
     req = req_post("http://web.kpi.kharkov.ua/sgt/uk/", 'GET')
     if not req:
         return
@@ -85,24 +67,24 @@ def parse_3():
     return posts
 
 
-def parse_4():
+def parse_3():
     req = req_post("http://web.kpi.kharkov.ua/emmb/", 'GET')
     if not req:
         return
     html = BS(req.content, 'html.parser')
     posts = Posts()
-    for item in html.select('article'):
-        if not (item.get("id") and item.find('a')):
+    for item in html.select('table'):
+        if not item.find('a'):
             continue
         post = Post()
-        post.id = item.get("id")
-        post.title = item.find('a').get("title")
+        post.title = item.find('strong').text.strip()
         post.link = item.find('a').get("href")
+        post.id = post.link
         posts.add(post)
     return posts
 
 
-def parse_5():
+def parse_4():
     req = req_post("http://web.kpi.kharkov.ua/eee/", 'GET')
     if not req:
         return
@@ -126,7 +108,7 @@ def parse_news(n, update_last=True):
     :param update_last: Check for updates
     :return: Posts object
     """
-    parsers = {fa[0]: parse_1, fa[1]: parse_2, fa[2]: parse_3, fa[3]: parse_4, fa[4]: parse_5}
+    parsers = {fa[0]: parse_1, fa[1]: parse_2, fa[2]: parse_3, fa[3]: parse_4}
     if not isinstance(n, (str, int)):
         return
     if isinstance(n, int):
